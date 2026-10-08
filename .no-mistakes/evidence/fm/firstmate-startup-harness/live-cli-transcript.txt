@@ -1,0 +1,139 @@
+home=/private/tmp/fmlive.ROE4Vf/home old=ba37295efb757e3e5ecc61708cb4ecc69abd43d3 candidate=a5548cd5849bea182f916970483ce6f6a890d724
+
+### S1 capabilities advertises fresh profiles with exact launch_env
+$ fm-prelaunch.sh capabilities --home /private/tmp/fmlive.ROE4Vf/home
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"compatible","bundle_files":["bin/fm-prelaunch.sh","bin/fm-session-lock-lib.sh","bin/fm-cursor-lib.sh","bin/fm-wake-lib.sh","bin/fm-path-lib.sh","bin/fm-supervision-lib.sh","bin/fm-ff-lib.sh","bin/fm-secondmate-registry-lib.sh","bin/fm-timeout-lib.sh"],"source_remote":"origin","source_url":"/private/tmp/fmlive.ROE4Vf/origin.git","source_ref":"refs/heads/main","profiles":{"claude":{"binary":"/Users/cfischer/.local/share/claude/versions/2.1.292","harness_version":"2.1.292 (Claude Code)","argv_grammar":{"kind":"exact","args":[],"session":"fresh-only"},"launch_env":{}},"codex":{"binary":"/Users/cfischer/.codex/packages/standalone/releases/0.161.0-aarch64-apple-darwin/bin/codex","harness_version":"codex-cli 0.161.0","argv_grammar":{"kind":"exact","args":[],"session":"fresh-only"},"launch_env":{}},"cursor":{"binary":"/Users/cfischer/.local/share/cursor-agent/versions/2026.08.25-3e8eec8/cursor-agent","harness_version":"2026.08.25-3e8eec8","argv_grammar":{"kind":"exact","args":[],"session":"fresh-only"},"launch_env":{}},"kimi":{"binary":"/Users/cfischer/.kimi-code/bin/kimi","harness_version":"0.40.1","argv_grammar":{"kind":"exact","args":[],"session":"fresh-only"},"launch_env":{}}}}
+[rc=0]
+
+### S2 profile claude (no args) matches capability; resume args refused; unknown harness refused
+$ fm-prelaunch.sh profile --home /private/tmp/fmlive.ROE4Vf/home --harness claude --
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"fresh","binary":"/Users/cfischer/.local/share/claude/versions/2.1.292","harness_version":"2.1.292 (Claude Code)","argv":[],"launch_env":{}}
+[rc=0]
+$ fm-prelaunch.sh profile --home /private/tmp/fmlive.ROE4Vf/home --harness claude -- --resume
+fm-prelaunch: this fresh-session profile accepts no arguments
+[rc=1]
+$ fm-prelaunch.sh profile --home /private/tmp/fmlive.ROE4Vf/home --harness evil --
+fm-prelaunch: unknown or unsupported harness profile
+[rc=1]
+
+### S3 relative/symlinked --home refused
+$ fm-prelaunch.sh capabilities --home /private/tmp/fmlive.ROE4Vf/homelink
+fm-prelaunch: --home must be an existing absolute physical directory
+[rc=1]
+
+### S4 happy path: reserve -> check-update -> update(pinned) -> validate -> release
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"reserved","source_head":"ba37295efb757e3e5ecc61708cb4ecc69abd43d3"}
+[rc=0]
+reservation file:
+
+### S5 guard: explicit writer (no owner) blocked by live reservation; another token blocked; fm-update.sh refused
+$ fm-prelaunch.sh guard-write --home /private/tmp/fmlive.ROE4Vf/home
+fm-prelaunch: a live startup reservation blocks this write
+[rc=1]
+$ fm-prelaunch.sh guard-write --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: live startup reservation belongs to another owner
+[rc=1]
+$ fm-prelaunch.sh guard-write --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"owned"}
+[rc=0]
+fm-prelaunch: a live startup reservation blocks this write
+[fm-update rc=1]
+
+### S6 second reserve with different token refused
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: another live startup reservation owns this home
+[rc=1]
+$ fm-prelaunch.sh check-update --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted> --commit a5548cd5849bea182f916970483ce6f6a890d724
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"updated","source_head":"a5548cd5849bea182f916970483ce6f6a890d724","changed":true}
+[rc=0]
+HEAD after check: ba37295efb757e3e5ecc61708cb4ecc69abd43d3
+$ fm-prelaunch.sh update --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted> --commit a5548cd5849bea182f916970483ce6f6a890d724
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"updated","source_head":"a5548cd5849bea182f916970483ce6f6a890d724","changed":true}
+[rc=0]
+HEAD after update: a5548cd5849bea182f916970483ce6f6a890d724
+$ fm-prelaunch.sh validate --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"valid","source_head":"a5548cd5849bea182f916970483ce6f6a890d724"}
+[rc=0]
+$ fm-prelaunch.sh release --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"released"}
+[rc=0]
+$ fm-prelaunch.sh guard-write --home /private/tmp/fmlive.ROE4Vf/home
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"clear"}
+[rc=0]
+
+### S7 fail closed: dirty checkout refuses update and preserves work
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"reserved","source_head":"a5548cd5849bea182f916970483ce6f6a890d724"}
+[rc=0]
+$ fm-prelaunch.sh update --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted> --commit a70b52173a299614a3e6bba37b45c16df3883811
+fm-prelaunch: source update refused by the guarded fast-forward
+[rc=1]
+HEAD: a5548cd5849bea182f916970483ce6f6a890d724 (expected unchanged a5548cd5849bea182f916970483ce6f6a890d724)
+ M AGENTS.md
+?? README.local-dirty
+$ fm-prelaunch.sh release --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"released"}
+[rc=0]
+
+### S8 fail closed: local-ahead/divergent refuses
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"reserved","source_head":"8955f1e45f85548089864f84b62a236baa84b899"}
+[rc=0]
+$ fm-prelaunch.sh update --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted> --commit a70b52173a299614a3e6bba37b45c16df3883811
+fm-prelaunch: source update refused by the guarded fast-forward
+[rc=1]
+HEAD: 8955f1e local-ahead
+$ fm-prelaunch.sh release --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"released"}
+[rc=0]
+
+### S9 fail closed: live session lock refuses reserve
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: session ownership is unreadable or unknown
+[rc=1]
+
+### S10 fail closed: dangling inventory meta symlink refuses reserve (strict snapshot)
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: fleet inventories are unreadable or changed during inspection
+[rc=1]
+
+### S11 fail closed: pending wake queue refuses reserve
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: the wake queue has pending work
+[rc=1]
+
+### S12 unknown reservation (garbage record) blocks guard-write / fm-update
+$ fm-prelaunch.sh guard-write --home /private/tmp/fmlive.ROE4Vf/home
+fm-prelaunch: startup reservation ownership is unreadable or unknown
+[rc=1]
+
+### S13 enrollment-ineligible primaries keep explicit update authority (guard-write clear)
+$ fm-prelaunch.sh guard-write --home /private/tmp/fmlive.ROE4Vf/home
+{"version":1,"home":"/private/tmp/fmlive.ROE4Vf/home","status":"clear"}
+[rc=0]
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: home must be a standalone primary checkout, not a linked worktree
+[rc=1]
+reread-firstmate: no
+restart-secondmates: none
+nudge-secondmates: none
+[fm-update rc=0]
+
+### S14 secondmate/lab homes and linked worktrees cannot enroll
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: lab homes cannot enroll in startup pull
+[rc=1]
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 12794 --token <redacted>
+fm-prelaunch: secondmate homes cannot enroll in startup pull
+[rc=1]
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/linked --owner-pid 12794 --token <redacted>
+fm-prelaunch: home must be a standalone primary checkout, not a linked worktree
+[rc=1]
+fm-prelaunch: no-mistakes phases cannot enroll in startup pull
+[rc=1 under NO_MISTAKES_GATE]
+
+### S15 owner pid that is not caller ancestor refused
+$ fm-prelaunch.sh reserve --home /private/tmp/fmlive.ROE4Vf/home --owner-pid 34066 --token <redacted>
+fm-prelaunch: caller is not the named launcher or its descendant
+[rc=1]

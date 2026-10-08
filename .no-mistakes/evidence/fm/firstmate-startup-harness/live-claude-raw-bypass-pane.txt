@@ -1,0 +1,50 @@
+
+ ▐▛███▛█   Claude Code v2.1.295
+▝▜██████▀  Opus 5.5 · Claude Team
+ ▝▝   ▝▝   /private/tmp/fmlive-e2e.66ph5o/home
+
+  Updated to latest. Got 3 features, 41 bugfixes, and 14 other changes.
+  code.claude.com/docs/en/changelog for details
+
+
+❯ Do not run any tools. Quote verbatim the single line beginning with STARTUP_PULL from your SessionStart hook context, and nothing else.
+
+⏺ STARTUP_PULL: bypassed; no verified firstmate-start handoff reached this fresh session
+
+✻ Brewed for 2s · done 7:00 PM
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  …/fmlive-e2e.66ph5o/home · main · Opus 5.5 · 5%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents

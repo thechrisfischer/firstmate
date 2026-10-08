@@ -1,0 +1,50 @@
+
+ ▐▛███▛█   Claude Code v2.1.292
+▝▜██████▀  Opus 5.5 · Claude Team
+ ▝▝   ▝▝   /private/tmp/fmlive-e2e.66ph5o/home
+
+
+❯ Do not run any tools. Quote verbatim the single line beginning with STARTUP_PULL from your SessionStart hook context, and nothing else.
+
+⏺ STARTUP_PULL: verified launcher handoff; source ba37295efb757e3e5ecc61708cb4ecc69abd43d3 -> cacc45339660131014f08b70174f854b27172852 (updated)
+
+✻ Churned for 2s · done 6:58 PM
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                                                                                                                ✔ Update installed · Restart to update
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  …/fmlive-e2e.66ph5o/home · main · Opus 5.5 · 5%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents

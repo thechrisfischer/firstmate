@@ -1,0 +1,34 @@
+== launcher log (real fm-prelaunch.sh calls) ==
+profile rc=0 {"version":1,"home":"/private/tmp/fmlive-e2e.66ph5o/home","status":"fresh","binary":"/Users/cfischer/.local/share/claude/versions/2.1.292","harness_version":"2.1.292 (Claude Code)","argv":[],"launch_env":{}}
+reserve rc=0 {"version":1,"home":"/private/tmp/fmlive-e2e.66ph5o/home","status":"reserved","source_head":"ba37295efb757e3e5ecc61708cb4ecc69abd43d3"}
+check-update rc=0 {"version":1,"home":"/private/tmp/fmlive-e2e.66ph5o/home","status":"updated","source_head":"cacc45339660131014f08b70174f854b27172852","changed":true}
+update rc=0 {"version":1,"home":"/private/tmp/fmlive-e2e.66ph5o/home","status":"updated","source_head":"cacc45339660131014f08b70174f854b27172852","changed":true}
+validate rc=0 {"version":1,"home":"/private/tmp/fmlive-e2e.66ph5o/home","status":"valid","source_head":"cacc45339660131014f08b70174f854b27172852"}
+attach rc=0 {"version":1,"home":"/private/tmp/fmlive-e2e.66ph5o/home","status":"attached","child_pid":58071}
+== state/.lock pid and process ==
+58071
+  PID  PPID COMM
+58071 54045 claude
+== reservation file present? ==
+ls: /private/tmp/fmlive-e2e.66ph5o/home/state/.prelaunch-reservation: No such file or directory
+== handoff receipt (token hash redacted) ==
+schema=fm-prelaunch-handoff.v1
+home=/private/tmp/fmlive-e2e.66ph5o/home
+home_identity=16777233:193119289
+source_identity=16777233:193119290:default=main:origin-sha256=c255942c776438a8f75eb6c85856f40db27acf2fadc44f8e4881a068163cc347
+owner_pid=54045
+owner_identity_sha256=ff1e1a895fc5437711f8a79b282d6e8879d0f9c5caf5522fafe06dcda53bba5b
+token_sha256=<redacted>
+child_pid=58071
+child_generation_sha256=e22d372a7ddaaa346d106301af85b0d4ebca0fe53c16d804ba42ae99adac8d4b
+lock_pid=58071
+source_commit=ba37295efb757e3e5ecc61708cb4ecc69abd43d3
+target_commit=cacc45339660131014f08b70174f854b27172852
+update_status=updated
+handed_at=1791500244
+== HEAD ==
+cacc453 approved candidate
+ba37295 no-mistakes(review): Fix strict inventory, guard-write scope, profile launch_env parity
+== S: second launcher reserve while live session owns home ==
+fm-prelaunch: a live primary session owns this home
+[rc=1]

@@ -1,0 +1,13 @@
+ok - prelaunch: capabilities are read-only and expose a frozen closure plus exact fresh profiles
+ok - prelaunch: profile launch_env equals the advertised allowlisted capability object
+ok - prelaunch: unsafe fleet inventories fail the strict idleness proof
+ok - prelaunch: guard-write refuses only reservations, not enrollment-ineligible primaries
+ok - prelaunch: reservation validation, write guard, token binding and release are enforced
+ok - prelaunch: pinned preflight/update are local-only, count SHA movement, and disable Git hooks
+ok - prelaunch: filters, dirty state and wrong branches refuse without checkout mutation
+ok - prelaunch: active fleet, pending queue, session/publication locks and malformed state refuse
+ok - prelaunch: source origin/default identity remains bound after reservation
+ok - prelaunch: races, death, PID reuse and copied-token ancestry are fail-closed
+ok - prelaunch: attached child keeps occupancy and completes verified handoff after launcher death
+ok - prelaunch: aliases, secondmates, no-mistakes phases and linked workers are excluded
+ok - prelaunch: only the authenticated genuine child atomically exchanges into the session lock
