@@ -1,0 +1,24 @@
+## lab home: <LAB> (disposable, fm-lab-home marked)
+$ fm-codex-orca-continuation.py context --home <LAB>   (no ORCA_TERMINAL_HANDLE)
+exit=3
+$ fm-codex-orca-continuation.py ensure --home <LAB>   (no ORCA_TERMINAL_HANDLE)
+{
+  "applicable": false
+}
+exit=0
+$ fm-codex-orca-continuation.py status --home <LAB>   (no ORCA_TERMINAL_HANDLE)
+{
+  "ready": false
+}
+exit=0
+$ ORCA_TERMINAL_HANDLE=term-bogus fm-codex-orca-continuation.py context --home <LAB>   (caller is not the lock-owning Codex primary)
+exit=3
+$ ORCA_TERMINAL_HANDLE=term-bogus fm-codex-orca-continuation.py ensure --home <LAB>   (caller is not the lock-owning Codex primary)
+{
+  "applicable": false
+}
+exit=0
+$ run --home <LAB> --generation bogus   (no pending launching generation)
+continuation: run requires the current verified bootstrap generation
+exit=1
+## state after (no owner record / receipts written):

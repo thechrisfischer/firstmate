@@ -1,0 +1,12 @@
+### BASE Stop hook (.codex/hooks.json), non-Orca lab primary home, no watcher, stop_hook_active=false
+exit=0
+### BASE Stop hook, stop_hook_active=true (second-stop safety)
+exit=0
+### BASE Stop hook, ORCA_TERMINAL_HANDLE=term-bogus but caller not the Codex lock owner, stop_hook_active=false
+exit=0
+### CHANGE Stop hook (.codex/hooks.json), non-Orca lab primary home, no watcher, stop_hook_active=false
+exit=0
+### CHANGE Stop hook, stop_hook_active=true (second-stop safety)
+exit=0
+### CHANGE Stop hook, ORCA_TERMINAL_HANDLE=term-bogus but caller not the Codex lock owner, stop_hook_active=false
+exit=0
