@@ -41,7 +41,9 @@ A turn-started, handling-confirmed generation that later reopens as downtime
 without ACK is re-presented exactly once, keeping the prior episode as
 replay_prior; ensure refuses after that. Delivery re-reads the recovery marker
 and never presents an acknowledged or superseded generation. A relaunch for
-the same primary keeps its episode even if the CLI path or code root changed.
+the same primary keeps its episode even if the CLI path or code root changed;
+a live owner is reused across a CLI path change but refused for another
+primary or code root.
 A run refused before it owns its lifetime marks its launching record failed.
 ensure waits, within its bound, only for a live matching owner that is
 re-arming; launched and reused owners pass the same delivery checks, and no

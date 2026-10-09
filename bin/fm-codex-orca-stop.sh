@@ -3,6 +3,9 @@
 # fm-turnend-guard.sh with the original payload. A failed ensure blocks once
 # even when a watcher survives; the existing stop_hook_active safety wins on
 # the repeated Stop. Other backends, workers, away/host homes retain the guard.
+# A refused ensure (exit 1) hands its first error line to the guard's renderer
+# as FM_CODEX_ORCA_ENSURE_REFUSAL, so the repair line skips a second Orca
+# context query and the refusal stays inside the 30s Codex Stop budget.
 # Usage: FM_HOME=<home> fm-codex-orca-stop.sh < <Codex-hook-JSON>
 set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
