@@ -915,7 +915,20 @@ if [ -n "$ACK_THROUGH" ]; then
     }
   fi
   ACK_REMOVED=$(( $(awk 'END { print NR }' "$FM_WAKE_QUEUE") - $(awk 'END { print NR }' "$DRAIN_TMP") ))
-  if [ ! -s "$DRAIN_TMP" ]; then
+  ACK_QUEUE_EMPTY=false
+  [ -s "$DRAIN_TMP" ] || ACK_QUEUE_EMPTY=true
+  if ! _fm_atomic_replace "$DRAIN_TMP" "$FM_WAKE_QUEUE"; then
+    echo "wake drain: acknowledged wakes could not be consumed safely" >&2
+    exit 1
+  fi
+  DRAIN_TMP=
+  if [ "$ACTOR" = branch ]; then
+    consume_actor_rows_locked "$ELIGIBLE_ROWS_FILE" "$ACK_THROUGH" || exit 1
+  else
+    consume_actor_rows_locked "$MAIN_ROWS_FILE" "$ACK_THROUGH" || exit 1
+  fi
+  # Recovery proof is valid only after the queue and actor claims are consumed.
+  if [ "$ACK_QUEUE_EMPTY" = true ]; then
     fm_recovery_marker_ack "$RECOVERY_MARKER" "$ACK_GENERATION"
     RECOVERY_ACK_STATUS=$?
     case "$RECOVERY_ACK_STATUS" in
@@ -932,16 +945,6 @@ if [ -n "$ACK_THROUGH" ]; then
     if [ "${RECOVERY_MARKER_TOKEN##*:}" != "$ACK_GENERATION" ]; then
       RECOVERY_ACK_MOVED=true
     fi
-  fi
-  if ! _fm_atomic_replace "$DRAIN_TMP" "$FM_WAKE_QUEUE"; then
-    echo "wake drain: acknowledged wakes could not be consumed safely" >&2
-    exit 1
-  fi
-  DRAIN_TMP=
-  if [ "$ACTOR" = branch ]; then
-    consume_actor_rows_locked "$ELIGIBLE_ROWS_FILE" "$ACK_THROUGH" || exit 1
-  else
-    consume_actor_rows_locked "$MAIN_ROWS_FILE" "$ACK_THROUGH" || exit 1
   fi
   fm_lock_release "$FM_WAKE_QUEUE_LOCK"
   DRAIN_LOCK_HELD=false

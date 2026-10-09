@@ -3505,6 +3505,58 @@ SH
   pass "watch liveness: an unreachable remote secondmate is probed, preserved, and never failed over"
 }
 
+test_failed_queue_ack_commit_retains_recovery_evidence() {
+  local dir state fakebin real_mv sequence generation marker rc
+  dir=$(make_case failed-queue-ack-commit)
+  state="$dir/state"
+  fakebin="$dir/fakebin"
+  real_mv=$(command -v mv) || fail "could not locate mv for queue commit fixture"
+  append_wake "$state" check fixture 'check: retryable wake' || fail "could not append commit fixture wake"
+  FM_STATE_OVERRIDE="$state" "$DRAIN" >"$dir/initial.out" 2>"$dir/initial.err" || fail "initial commit fixture drain failed"
+  sequence=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through \([0-9][0-9]*\) --recovery-generation .*/\1/p' "$dir/initial.err")
+  generation=$(sed -n 's/^WAKE_ACK_REQUIRED:.*--recovery-generation \([A-Za-z0-9._-][A-Za-z0-9._-]*\)$/\1/p' "$dir/initial.err")
+  [ -n "$sequence" ] && [ -n "$generation" ] || fail "fixture omitted ACK boundary"
+  marker=$(cat "$state/.watcher-down")
+  cp "$state/.wake-queue" "$dir/queue.before"
+  cat >"$fakebin/mv" <<'SH'
+#!/usr/bin/env bash
+last=${!#}
+if [ "$last" = "$FM_TEST_ACK_QUEUE" ]; then
+  for arg in "$@"; do
+    case "$arg" in */.wake-queue.ack.*) exit 1 ;; esac
+  done
+fi
+exec "$FM_TEST_REAL_MV" "$@"
+SH
+  chmod +x "$fakebin/mv"
+  rc=0
+  PATH="$fakebin:$PATH" FM_TEST_REAL_MV="$real_mv" FM_TEST_ACK_QUEUE="$state/.wake-queue" \
+    FM_STATE_OVERRIDE="$state" "$DRAIN" --ack-through "$sequence" --recovery-generation "$generation" \
+      >"$dir/failed.out" 2>"$dir/failed.err" || rc=$?
+  expect_code 1 "$rc" "failed queue ACK commit"
+  assert_contains "$(cat "$dir/failed.err")" 'acknowledged wakes could not be consumed safely' 'queue failure diagnostic missing'
+  cmp -s "$state/.wake-queue" "$dir/queue.before" || fail "failed queue commit consumed the wake"
+  [ "$(cat "$state/.watcher-down")" = "$marker" ] || fail "failed queue commit acknowledged recovery"
+  assert_absent "$state/.watcher-down.acked" 'failed queue commit published recovery ACK proof'
+  FM_STATE_OVERRIDE="$state" "$DRAIN" >"$dir/replay.out" 2>"$dir/replay.err" || fail "failed commit wake did not replay"
+  assert_contains "$(cat "$dir/replay.out")" 'check: retryable wake' 'failed commit lost replay evidence'
+  assert_contains "$(cat "$dir/replay.err")" "--recovery-generation $generation" 'replay changed the retry generation'
+  FM_STATE_OVERRIDE="$state" "$DRAIN" --ack-through "$sequence" --recovery-generation "$generation" \
+    >"$dir/retry.out" 2>"$dir/retry.err" || fail "queue ACK retry failed"
+  [ ! -s "$state/.wake-queue" ] || fail "successful retry left a queued wake"
+  assert_contains "$(cat "$state/.watcher-down.acked")" "$generation $sequence" 'successful consumption omitted exact ACK proof'
+  FM_STATE_OVERRIDE="$state" "$DRAIN" --ack-through "$sequence" --recovery-generation "$generation" \
+    >"$dir/duplicate.out" 2>"$dir/duplicate.err" || fail "duplicate ACK did not converge"
+  append_wake "$state" check successor 'check: successor wake' || fail "successor append failed"
+  marker=$(cat "$state/.watcher-down")
+  FM_STATE_OVERRIDE="$state" "$DRAIN" --ack-through "$sequence" --recovery-generation "$generation" \
+    >"$dir/stale.out" 2>"$dir/stale.err" || fail "old ACK failed across successor"
+  [ "$(cat "$state/.watcher-down")" = "$marker" ] || fail "old ACK retired successor generation"
+  assert_contains "$(cat "$state/.wake-queue")" 'check: successor wake' 'old ACK consumed successor wake'
+  pass "wake drain: failed queue ACK commit retains retry evidence; success and stale replay protect successor"
+}
+
+test_failed_queue_ack_commit_retains_recovery_evidence
 test_self_held_lock_reclaims_instead_of_deadlocking
 test_subshell_lock_ownership_without_bashpid
 test_bounded_lock_handoff_after_contention
