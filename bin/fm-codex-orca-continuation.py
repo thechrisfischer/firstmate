@@ -94,13 +94,15 @@ class Adapter:
         self.code = pathlib.Path(args.code_root or __file__).resolve()
         if not args.code_root:
             self.code = self.code.parent.parent
-        self.state = self.home / "state"
+        self.state = pathlib.Path(os.path.abspath(os.environ.get("FM_STATE_OVERRIDE") or self.home / "state"))
+        self.config = pathlib.Path(os.path.abspath(os.environ.get("FM_CONFIG_OVERRIDE") or self.home / "config"))
+        self.data = pathlib.Path(os.path.abspath(os.environ.get("FM_DATA_OVERRIDE") or self.home / "data"))
         self.record_path = self.state / ".codex-orca-continuation.json"
         self.receipts = self.state / ".codex-orca-continuation"
         self.env = dict(os.environ, FM_HOME=str(self.home),
                         FM_ROOT_OVERRIDE=str(self.code), FM_STATE_OVERRIDE=str(self.state),
-                        FM_CONFIG_OVERRIDE=str(self.home / "config"),
-                        FM_DATA_OVERRIDE=str(self.home / "data"), LC_ALL="C")
+                        FM_CONFIG_OVERRIDE=str(self.config),
+                        FM_DATA_OVERRIDE=str(self.data), LC_ALL="C")
         self.children = []
         self.arms = set()
         self.arm_files = []
@@ -112,32 +114,58 @@ class Adapter:
         self.stopping = False
         self.owns_lifetime = False
 
-    def command(self, argv, timeout=5, input_text=None, owned_transport=False):
+    def command(self, argv, timeout=5, owned_transport=False, release=None):
         if self.operation_deadline is not None:
             timeout = min(timeout, self.operation_deadline - time.monotonic())
             if timeout <= 0:
                 raise Refused("bounded adapter observation deadline reached")
-        p = subprocess.Popen(argv, env=self.env, stdin=subprocess.PIPE if input_text is not None
+        p = subprocess.Popen(argv, env=self.env, stdin=subprocess.PIPE if owned_transport
                              else subprocess.DEVNULL, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, text=True, start_new_session=True)
         self.children.append(p)
         try:
             if owned_transport:
                 self.publish(transport={"pid": p.pid, "identity": self.identity(p.pid)})
-            out, err = p.communicate(input_text, timeout=timeout)
+                if not release():
+                    self.reap(p)
+                    p.communicate()
+                    return None, "", ""
+            out, err = p.communicate("go\n" if owned_transport else None, timeout=timeout)
             return p.returncode, out, err
         except subprocess.TimeoutExpired:
             self.reap(p)
             out, err = p.communicate(timeout=1)
             return 124, out, err + "\ncommand observation timed out; delivery may be unknown"
+        except BaseException:
+            self.reap(p)
+            raise
         finally:
             self.children.remove(p)
             if owned_transport:
-                self.publish(transport=None)
+                self.publish_if_current(transport=None)
 
-    def shell(self, body, *values, timeout=5, owned_transport=False):
+    def shell(self, body, *values, timeout=5, owned_transport=False, release=None):
+        if owned_transport:
+            body = 'IFS= read -r gate && [ "$gate" = go ] || exit 125; ' + body
         return self.command(["bash", "-c", body, "continuation", str(self.code), *map(str, values)],
-                            timeout=timeout, owned_transport=owned_transport)
+                            timeout=timeout, owned_transport=owned_transport, release=release)
+
+    def receipt(self, name):
+        if self.receipts.is_symlink():
+            raise Refused("refusing symlinked adapter receipts")
+        return self.receipts / name
+
+    def write_receipt(self, name, data):
+        self.receipts.mkdir(mode=0o700, exist_ok=True)
+        self.atomic(self.receipt(name), data)
+        kinds = (".bootstrap.json", ".cleanup.json", ".abandon.json")
+        kind = next((k for k in kinds if name.endswith(k)), None)
+        retained = sorted((p for p in self.receipts.glob("*.json") if not p.is_symlink()
+                           and re.fullmatch(r"[A-Za-z0-9._-]+\.json", p.name)
+                           and (p.name.endswith(kind) if kind else not p.name.endswith(kinds))),
+                          key=lambda p: p.stat().st_mtime)
+        for p in retained[:-64]:
+            p.unlink()
 
     def identity(self, pid):
         rc, out, _ = self.shell('. "$1/bin/fm-wake-lib.sh"; fm_pid_identity "$2"', pid)
@@ -330,7 +358,7 @@ class Adapter:
         same_primary = all((old.get("binding") or {}).get(k) == binding[k]
                            for k in ("session_pid", "session_identity", "target"))
         if alive:
-            if not same_primary:
+            if not same_primary or (old.get("binding") or {}).get("code_root") != binding["code_root"]:
                 raise Refused("live owner has another primary/runtime binding; no adoption")
             while not self.ready(old):
                 if old.get("phase") not in ("arming", "ready") or time.monotonic() >= end - 2:
@@ -350,7 +378,8 @@ class Adapter:
         if old.get("binding") != binding:
             self.record["previous_arm"] = None
         self.publish()
-        command = shlex.join(["env", "FM_HOME=" + str(self.home), "NO_COLOR=1", "CLICOLOR=0",
+        command = shlex.join(["env", "FM_HOME=" + str(self.home), "FM_STATE_OVERRIDE=" + str(self.state),
+                              "FM_CONFIG_OVERRIDE=" + str(self.config), "FM_DATA_OVERRIDE=" + str(self.data), "NO_COLOR=1", "CLICOLOR=0",
                               "CLICOLOR_FORCE=0", "GH_FORCE_TTY=0", sys.executable,
                               str(self.code / "bin/fm-codex-orca-continuation.py"), "run",
                               "--home", str(self.home), "--code-root", str(self.code),
@@ -358,9 +387,8 @@ class Adapter:
         rc, raw, err = self.command([cli, "terminal", "create", "--worktree", "id:" + target["worktreeId"],
                                     "--title", "Firstmate Codex continuation " + generation, "--command", command,
                                     "--json"], timeout=5)
-        self.receipts.mkdir(mode=0o700, exist_ok=True)
         receipt = {"generation": generation, "exit": rc, "stdout": raw, "stderr": err}
-        self.atomic(self.receipts / (generation + ".bootstrap.json"), receipt)
+        self.write_receipt(generation + ".bootstrap.json", receipt)
         # Do not overwrite run's newer publication when create returns.
         if rc:
             raise Refused("owner terminal creation unconfirmed; no automatic repeat: " + err.strip())
@@ -369,7 +397,7 @@ class Adapter:
             if created.get("ok") is not True or not created["result"]["terminal"]["handle"]:
                 raise ValueError("missing exact owner terminal receipt")
             receipt["owner_terminal"] = created["result"]["terminal"]["handle"]
-            self.atomic(self.receipts / (generation + ".bootstrap.json"), receipt)
+            self.write_receipt(generation + ".bootstrap.json", receipt)
         except (ValueError, KeyError, TypeError, AttributeError) as e:
             raise Refused("owner terminal receipt unconfirmed; inspect before repeating") from e
         while time.monotonic() < end:
@@ -448,11 +476,10 @@ class Adapter:
                 raise Refused("owner terminal absence unproven: terminal list unreadable") from e
             if current["target"]["handle"] not in handles:
                 raise Refused("owner terminal absence unproven: terminal list is incomplete")
-            owner_terminal = self.read(self.receipts / (generation + ".bootstrap.json")).get("owner_terminal")
+            owner_terminal = self.read(self.receipt(generation + ".bootstrap.json")).get("owner_terminal")
             if owner_terminal in handles or any(generation in title for title in titles):
                 raise Refused("owner terminal for this generation is live; close or inspect it, no abandonment")
-            self.receipts.mkdir(mode=0o700, exist_ok=True)
-            self.atomic(self.receipts / (generation + ".abandon.json"),
+            self.write_receipt(generation + ".abandon.json",
                         {"generation": generation, "terminals": raw, "at": time.time()})
             self.record = record
             self.publish(phase="failed", error="launch abandoned after proven owner absence")
@@ -462,7 +489,7 @@ class Adapter:
         result = dict(record)
         generation = result.get("generation", "")
         if re.fullmatch(r"[A-Za-z0-9._-]+", generation):
-            result["bootstrap"] = self.read(self.receipts / (generation + ".bootstrap.json"))
+            result["bootstrap"] = self.read(self.receipt(generation + ".bootstrap.json"))
         return result
 
     def reap(self, p):
@@ -596,9 +623,13 @@ class Adapter:
         # downtime without ACK is presented once more; never an ambiguous one.
         return self.reopened(episode, token) and episode.get("phase") == "turn-started" and not episode.get("replay_of")
 
+    def presentable(self, generation, token=None):
+        token = token or self.recovery()
+        return token.startswith(("pending:", "announced:")) and token.split(":")[-1] == generation
+
     def deliver(self, generation):
         token = self.recovery()
-        if not token.startswith(("pending:", "announced:")) or token.split(":")[-1] != generation:
+        if not self.presentable(generation, token):
             return
         prior = self.record.get("episode", {})
         if prior.get("generation") == generation:
@@ -628,13 +659,24 @@ class Adapter:
                         return
                 raise Refused("identity-bound successor lost before notification")
             health = self.record["watcher"]
-            if attempt == 0:
-                self.publish(episode=episode)
+
+            def release(first=attempt == 0):
+                self.target_valid()
+                self.still_owned()
+                if not self.ready(self.record) or not self.presentable(generation):
+                    return False
+                if first:
+                    self.publish(episode=episode)
+                return True
             submitted_at = time.time()
             rc, out, err = self.shell('. "$1/bin/backends/orca.sh"; '
                                       'fm_backend_orca_primary_send "$2" "$3" "$4" "$5" "${6:-}"',
                                       b["cli"], b["target"]["handle"], payload, "10", retry or "", timeout=15,
-                                      owned_transport=True)
+                                      owned_transport=True, release=release)
+            if rc is None:
+                if attempt == 0:
+                    return
+                break
             row = {"exit": rc, "stdout": out, "stderr": err, "retry_request": retry,
                    "successor": health, "submitted_at": submitted_at, "at": time.time()}
             episode["attempts"].append(row)
@@ -666,13 +708,7 @@ class Adapter:
                 self.publish(episode=episode)
                 continue
             break
-        self.receipts.mkdir(mode=0o700, exist_ok=True)
-        self.atomic(self.receipts / (generation + ".json"), episode)
-        retained = sorted((p for p in self.receipts.glob("*.json") if not p.is_symlink()
-                           and not p.name.endswith((".bootstrap.json", ".cleanup.json", ".abandon.json"))
-                           and re.fullmatch(r"[A-Za-z0-9._-]+\.json", p.name)), key=lambda p: p.stat().st_mtime)
-        for p in retained[:-64]:
-            p.unlink()
+        self.write_receipt(generation + ".json", episode)
         self.publish(episode=episode)
         if episode["phase"] in ("turn-started", "input-accepted-unproven"):
             health = self.healthy()
@@ -691,13 +727,13 @@ class Adapter:
                     self.target_valid()
                     self.still_owned()
                     episode["confirmation_superseded_by"] = token
-                    self.atomic(self.receipts / (generation + ".json"), episode)
+                    self.write_receipt(generation + ".json", episode)
                     self.publish(episode=episode)
                     return
             if rc:
                 raise Refused("generation-bound handling delivery confirmation failed")
             episode["handling_confirmed"] = True
-            self.atomic(self.receipts / (generation + ".json"), episode)
+            self.write_receipt(generation + ".json", episode)
             self.publish(episode=episode)
         else:
             print("continuation: " + episode["phase"] + "; wake durable, successor protected, no fresh resend", flush=True)
@@ -770,8 +806,7 @@ class Adapter:
                 cleanup = {"children": [{"pid": p.pid, "exit": p.returncode} for p in self.children],
                            "watcher_healthy": self.healthy() is not None,
                            "watcher_lock_remaining": (self.state / ".watch.lock/pid").exists()}
-                self.receipts.mkdir(mode=0o700, exist_ok=True)
-                self.atomic(self.receipts / (self.record["generation"] + ".cleanup.json"), cleanup)
+                self.write_receipt(self.record["generation"] + ".cleanup.json", cleanup)
                 self.publish_if_current(cleanup=cleanup)
                 for output in self.arm_files:
                     if not output.closed:

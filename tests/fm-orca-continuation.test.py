@@ -34,6 +34,9 @@ if a[:2]==['terminal','show']:
  if owner and (h/'hold-show').exists() and marker.exists() and marker.read_text().startswith('announced:downtime:'):
   deadline=time.monotonic()+4
   while (h/'hold-show').exists() and time.monotonic()<deadline: time.sleep(.05)
+ if owner and (h/'hold-gate').exists() and rec.exists() and json.loads(rec.read_text()).get('transport'):
+  deadline=time.monotonic()+10
+  while (h/'hold-gate').exists() and time.monotonic()<deadline: time.sleep(.05)
  if mode=='show-fails-launching' and rec.exists() and json.loads(rec.read_text()).get('phase')=='launching':
   print('fixture terminal show unavailable',file=sys.stderr);sys.exit(1)
  print(json.dumps({'ok':True,'result':{'terminal':{'handle':shown,'incarnationId':inc,'worktreeId':'repo::'+str(h),'connected':True,'writable':True,'orphaned':False,'agentIdentity':'claude' if mode=='not-codex' else 'codex'}},'_meta':{'runtimeId':runtime}}))
@@ -45,13 +48,17 @@ elif a[:2]==['terminal','list']:
  print(json.dumps({'ok':True,'result':{'terminals':primary+rows}}))
 elif a[:2]==['terminal','create']:
  with (h/'creates').open('a') as f: f.write('create\n')
+ (h/'last-create-command').write_text(a[a.index('--command')+1])
  if mode=='create-ambiguous':
   print('fixture creation receipt unavailable',file=sys.stderr);sys.exit(1)
  with (h/'terminals').open('a') as f: f.write(json.dumps({'handle':'term-owner','title':a[a.index('--title')+1]})+'\n')
+ if mode=='create-no-owner':
+  print(json.dumps({'ok':True,'result':{'terminal':{'handle':'term-owner'}}}));sys.exit(0)
  if mode=='create-error-created':
   print('fixture creation receipt unavailable after create',file=sys.stderr);sys.exit(1)
  with (h/'owner.log').open('a') as out:
-  p=subprocess.Popen(['bash','-c',a[a.index('--command')+1]],stdin=subprocess.DEVNULL,stdout=out,stderr=out,start_new_session=True)
+  env={k:v for k,v in os.environ.items() if k not in ('FM_STATE_OVERRIDE','FM_CONFIG_OVERRIDE','FM_DATA_OVERRIDE')}
+  p=subprocess.Popen(['bash','-c',a[a.index('--command')+1]],stdin=subprocess.DEVNULL,stdout=out,stderr=out,start_new_session=True,cwd=h,env=env)
  (h/'app-pid').write_text(str(p.pid))
  print(json.dumps({'ok':True,'result':{'terminal':{'handle':'term-owner'}}}))
 elif a[:2]==['terminal','send']:
@@ -64,6 +71,10 @@ elif a[:2]==['terminal','send']:
  if mode=='held':
   deadline=time.monotonic()+12
   while not (h/'release-send').exists() and time.monotonic()<deadline: time.sleep(.05)
+ if mode=='ambiguous-held' and not retry:
+  deadline=time.monotonic()+12
+  while not (h/'release-send').exists() and time.monotonic()<deadline: time.sleep(.05)
+  print(json.dumps({'ok':False,'warnings':['resume exact command with --retry-request request-stable']}));sys.exit(1)
  if mode=='reject':
   print(json.dumps({'ok':False,'error':{'message':'fixture rejection'}}));sys.exit(1)
  if mode=='ambiguous-always' or (mode=='ambiguous' and not retry):
@@ -91,7 +102,8 @@ class Fixture:
         cli.chmod(0o700)
         self.env = dict(os.environ, ORCA_CLI_COMMAND=str(cli), ORCA_TERMINAL_HANDLE="term-primary",
                         FM_HOME=str(self.home), FM_ROOT_OVERRIDE=str(self.code),
-                        FM_STATE_OVERRIDE=str(self.home / "state"), FM_POLL="1", FM_SIGNAL_GRACE="1",
+                        FM_STATE_OVERRIDE=str(self.home / "state"), FM_CONFIG_OVERRIDE=str(self.home / "config"),
+                        FM_DATA_OVERRIDE=str(self.home / "data"), FM_POLL="1", FM_SIGNAL_GRACE="1",
                         FM_CHECK_INTERVAL="1", FM_HEARTBEAT="999999", FM_CHECK_TIMEOUT="2")
         self.env.pop("ORCA_DEV_REPO_ROOT", None)
         check = self.home / "state/probe.check.sh"
@@ -100,10 +112,10 @@ class Fixture:
         subprocess.run(["bash", str(self.code / "bin/fm-check-register.sh"), "probe"],
                        env=self.env, check=True, capture_output=True)
 
-    def call(self, mode, *extra, input_text=None, env=None, timeout=25):
+    def call(self, mode, *extra, env=None, timeout=25):
         return subprocess.run([sys.executable, str(ADAPTER), mode, "--home", str(self.home),
                                "--code-root", str(self.code), *extra], env=env or self.env,
-                              input=input_text, capture_output=True, text=True, timeout=timeout)
+                              capture_output=True, text=True, timeout=timeout)
 
     def record(self):
         p = self.home / "state/.codex-orca-continuation.json"
@@ -691,6 +703,25 @@ class ContinuationTests(unittest.TestCase):
         self.assertEqual(len(f.sends()), 1)
         self.assertEqual(f.record()["episode"]["phase"], "delivery-rejected")
 
+    def test_live_owner_reuse_allows_cli_spelling_but_not_code_root(self):
+        f = self.fixture()
+        first = f.ensure()
+        alias = f.home / "orca-alias"
+        alias.symlink_to(f.home / "orca")
+        p = f.call("ensure", env=dict(f.env, ORCA_CLI_COMMAND=str(alias)))
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(json.loads(p.stdout)["owner_pid"], first["owner_pid"])
+        code = TMP / (self._testMethodName + "-code")
+        shutil.copytree(ROOT / "bin", code / "bin", symlinks=True)
+        started = time.monotonic()
+        p = subprocess.run([sys.executable, str(ADAPTER), "ensure", "--home", str(f.home), "--code-root", str(code)],
+                           env=f.env, capture_output=True, text=True, timeout=25)
+        self.assertLess(time.monotonic() - started, 8)
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("live owner has another primary/runtime binding", p.stderr)
+        self.assertEqual((f.home / "creates").read_text().count("create"), 1)
+        self.assertEqual(f.record()["owner_pid"], first["owner_pid"])
+
     def test_external_inbox_during_predecessor_close(self):
         f = self.fixture()
         check = f.home / "state/probe.check.sh"
@@ -794,6 +825,62 @@ class ContinuationTests(unittest.TestCase):
         self.assertEqual(rows[1]["argv"][rows[1]["argv"].index("--retry-request") + 1], "request-stable")
         self.assertTrue(all(x["healthy"] for x in rows))
 
+    def test_retry_is_withheld_after_generation_ack(self):
+        f = self.fixture(mode="ambiguous-held")
+        f.ensure(); f.trigger()
+        f.wait(lambda: len(f.sends()) == 1, "first ambiguous attempt missing")
+        generation = f.record()["episode"]["generation"]
+        f.ack()
+        (f.home / "release-send").touch()
+        receipt = f.home / "state/.codex-orca-continuation" / (generation + ".json")
+        f.wait(receipt.exists, "withheld retry left no delivery receipt")
+        time.sleep(1)
+        self.assertEqual(len(f.sends()), 1)
+        withheld = json.loads(receipt.read_text())
+        self.assertEqual(withheld["permitted_retry"], "request-stable")
+        self.assertEqual(len(withheld["attempts"]), 1)
+
+    def test_ack_during_gate_release_sends_nothing(self):
+        f = self.fixture()
+        f.ensure()
+        (f.home / "hold-gate").touch(); f.trigger()
+        f.wait(lambda: bool(f.record().get("transport")), "gated transport was not published")
+        transport = f.record()["transport"]
+        f.ack()
+        (f.home / "hold-gate").unlink()
+        f.wait(lambda: subprocess.run(["ps", "-p", str(transport["pid"])], capture_output=True).returncode != 0,
+               "withheld transport survived")
+        time.sleep(1)
+        self.assertEqual(f.sends(), [])
+        self.assertNotIn("episode", f.record())
+
+    def test_owner_death_before_gate_release_never_sends(self):
+        f = self.fixture()
+        old = f.ensure()
+        (f.home / "hold-gate").touch(); f.trigger()
+        f.wait(lambda: bool(f.record().get("transport")), "gated transport was not published")
+        transport = f.record()["transport"]
+        os.kill(old["owner_pid"], signal.SIGKILL)
+        (f.home / "hold-gate").unlink()
+        f.wait(lambda: subprocess.run(["ps", "-p", str(transport["pid"])], capture_output=True).returncode != 0,
+               "gated transport survived its owner")
+        time.sleep(1)
+        self.assertEqual(f.sends(), [])
+        self.assertNotIn("episode", f.record())
+        self.assertEqual(f.relaunch(old["generation"]).returncode, 0)
+
+    def test_relative_overrides_reach_the_owner_terminal(self):
+        f = self.fixture()
+        (f.home / "alt-config").mkdir(); (f.home / "alt-data").mkdir()
+        env = dict(f.env, FM_STATE_OVERRIDE="../state", FM_CONFIG_OVERRIDE="../alt-config", FM_DATA_OVERRIDE="../alt-data")
+        p = subprocess.run([sys.executable, str(ADAPTER), "ensure", "--home", str(f.home), "--code-root", str(f.code),
+                            "--seconds", "90"], env=env, cwd=f.home / "data", capture_output=True, text=True, timeout=25)
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertTrue(json.loads(p.stdout)["owner_pid"])
+        command = shlex.split((f.home / "last-create-command").read_text())
+        for name, path in (("STATE", "state"), ("CONFIG", "alt-config"), ("DATA", "alt-data")):
+            self.assertIn("FM_" + name + "_OVERRIDE=" + str(f.home / path), command)
+
     def test_rejection_and_timeout_preserve_queue(self):
         for mode in ("reject", "timeout"):
             f = self.fixture(mode, mode=mode)
@@ -847,6 +934,27 @@ class ContinuationTests(unittest.TestCase):
         self.assertEqual(both.returncode, 0)
         env = dict(f.env); env.pop("ORCA_TERMINAL_HANDLE")
         self.assertFalse(json.loads(f.call("ensure", env=env).stdout)["applicable"])
+
+    def test_stop_refusal_fits_hook_budget_when_owner_never_readies(self):
+        f = self.fixture(mode="create-no-owner")
+        started = time.monotonic()
+        stop = subprocess.run(["bash", str(ROOT / "bin/fm-codex-orca-stop.sh")], env=f.env, capture_output=True,
+                              text=True, input='{"stop_hook_active":false}', timeout=30)
+        self.assertLess(time.monotonic() - started, 30)
+        self.assertEqual(stop.returncode, 2, stop.stderr)
+        self.assertIn("Orca owner/delivery is unconfirmed", stop.stderr)
+        self.assertEqual((f.home / "creates").read_text().count("create"), 1)
+        self.assertEqual(f.sends(), [])
+
+    def test_symlinked_receipt_directory_is_refused(self):
+        f = self.fixture()
+        outside = TMP / (self._testMethodName + "-outside")
+        outside.mkdir()
+        (f.home / "state/.codex-orca-continuation").symlink_to(outside, target_is_directory=True)
+        p = f.call("ensure", "--seconds", "90")
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn("refusing symlinked adapter receipts", p.stderr)
+        self.assertEqual(list(outside.iterdir()), [])
 
     def test_owner_death_restart_keeps_one_watcher(self):
         f = self.fixture()
