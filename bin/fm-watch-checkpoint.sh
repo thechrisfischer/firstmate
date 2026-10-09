@@ -95,7 +95,8 @@ run_with_perl_timeout() {  # <seconds> <command...>
     alarm $seconds;
     waitpid $pid, 0;
     alarm 0;
-    exit($? >> 8);
+    my $status = $?;
+    exit(($status & 127) ? 128 + ($status & 127) : $status >> 8);
   ' "$@"
 }
 

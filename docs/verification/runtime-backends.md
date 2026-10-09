@@ -1911,6 +1911,26 @@ tests/fm-bootstrap.test.sh
 
 The fake-Orca suite covers readiness, registration, create response parsing, metadata routing, popup-safe submit, and path-matched release refusal.
 
+### Portable checkpoint and recovery ACK controls
+
+On 2026-10-09, the shared checkpoint and wake-queue suites passed on macOS 27.0.1 arm64 with Bash 3.2.57.
+These executable regressions apply to the common supervision infrastructure across runtime backends.
+The forced Perl fallback preserves ordinary exits 0 and 7, child TERM as 143, timeout as 124, and actionable wake output as success.
+A failed queue replacement retains pending recovery and replayable rows without publishing ACK proof; successful retry, duplicate ACK, and an old ACK across a newer generation preserve successor wakes.
+The queue suite also exercises marker-write failure/retry, actor ownership, interruption and stale-generation controls.
+
+```sh
+bash bin/fm-test-run.sh tests/fm-watch-checkpoint.test.sh tests/fm-wake-queue.test.sh
+```
+
+```text
+FM_TEST_END 2026-10-09T17:00:18Z tests/fm-watch-checkpoint.test.sh exit=0 duration_ms=17006 gate_skip=false
+FM_TEST_END 2026-10-09T17:05:07Z tests/fm-wake-queue.test.sh exit=0 duration_ms=305249 gate_skip=false
+FM_TEST_SUMMARY total=2 failed=0 skipped_gate=0 duration_ms=305621
+```
+
+This is portable behavior evidence, not native Orca/Codex lifecycle or loaded-hook acceptance.
+
 ### Attended Codex continuation
 
 On 2026-10-08, the portable continuation suite passed on macOS with Python 3.9.6 and Bash 3.2.57.

@@ -196,6 +196,44 @@ test_real_host_checkpoint_ends_quietly_at_its_bound() {
   pass "checkpoint: the real host ends its park at the checkpoint bound as a quiet checkpoint"
 }
 
+test_perl_fallback_preserves_child_outcomes() {
+  local home fakebin tool kind expected status
+  home=$(make_home perl-outcomes)
+  fakebin="$home/fakebin"
+  mkdir -p "$home/root/bin" "$fakebin"
+  cp "$CHECKPOINT" "$ROOT/bin/fm-supervision-engine-lib.sh" "$home/root/bin/"
+  for tool in bash perl dirname mktemp rm grep cat sleep; do
+    ln -s "$(command -v "$tool")" "$fakebin/$tool"
+  done
+  cat > "$home/root/bin/fm-watch.sh" <<'SH'
+#!/usr/bin/env bash
+case "$FM_TEST_CHILD_OUTCOME" in
+  zero) exit 0 ;;
+  ordinary) exit 7 ;;
+  signal) kill -TERM "$$" ;;
+  timeout) sleep 10 ;;
+  wake) printf 'check: ordinary wake\n' ;;
+esac
+SH
+  chmod +x "$home/root/bin/fm-watch.sh"
+  for kind in zero ordinary signal timeout wake; do
+    case "$kind" in zero|wake) expected=0 ;; ordinary) expected=7 ;; signal) expected=143 ;; timeout) expected=124 ;; esac
+    status=0
+    PATH="$fakebin" FM_HOME="$home" FM_TEST_CHILD_OUTCOME="$kind" FM_SIGNAL_GRACE=1 \
+      "$home/root/bin/fm-watch-checkpoint.sh" --seconds 1 >"$home/out.txt" 2>"$home/err.txt" || status=$?
+    expect_code "$expected" "$status" "Perl fallback $kind outcome"
+    if [ "$kind" = wake ]; then
+      assert_contains "$(cat "$home/out.txt")" 'check: ordinary wake' 'Perl fallback lost an ordinary wake'
+    elif [ "$kind" = timeout ]; then
+      assert_contains "$(cat "$home/out.txt")" 'checkpoint: no actionable wake within 1s' 'Perl fallback lost quiet boundary'
+    else
+      [ ! -s "$home/out.txt" ] || fail "Perl fallback invented a wake for $kind"
+    fi
+  done
+  pass "checkpoint: Perl fallback preserves ordinary exits, child signals, timeout and wakes"
+}
+
+test_perl_fallback_preserves_child_outcomes
 test_quiet_checkpoint_exits_124_cleanly
 test_signal_passes_through_and_exits_zero
 test_registered_check_uses_preserved_watcher_environment
