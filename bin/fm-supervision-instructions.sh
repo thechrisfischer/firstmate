@@ -127,7 +127,12 @@ if [ "$HARNESS" = codex ] && [ "$READ_ONLY" -eq 0 ] && [ "$AFK" -eq 0 ] \
   && command -v python3 >/dev/null 2>&1 \
   && python3 -c 'import fcntl, sys; sys.exit(sys.version_info < (3, 9))' >/dev/null 2>&1; then
   orca_status=0
-  ORCA_REFUSAL=$(python3 "$SCRIPT_DIR/fm-codex-orca-continuation.py" context --home "$FM_HOME" --code-root "$FM_ROOT" 2>&1 >/dev/null) || orca_status=$?
+  if [ -n "${FM_CODEX_ORCA_ENSURE_REFUSAL:-}" ]; then
+    ORCA_REFUSAL=$FM_CODEX_ORCA_ENSURE_REFUSAL
+    orca_status=1
+  else
+    ORCA_REFUSAL=$(python3 "$SCRIPT_DIR/fm-codex-orca-continuation.py" context --home "$FM_HOME" --code-root "$FM_ROOT" 2>&1 >/dev/null) || orca_status=$?
+  fi
   case "$orca_status" in
     0) ORCA_CODEX=1; ORCA_REFUSAL= ;;
     1) ORCA_CODEX=1; ORCA_REFUSAL=${ORCA_REFUSAL#continuation: } ;;

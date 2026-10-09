@@ -35,7 +35,8 @@ for event in sorted(events,key=epoch):
   pairs.append((complete,epoch(event)));final=complete=None
 assert len(pairs)>=2, 'two native final/complete/new-start cycles required'
 matched=[]
-for p in (pathlib.Path(os.environ['FM_HOME'])/'state/.codex-orca-continuation').glob('*.json'):
+state=pathlib.Path(os.path.abspath(os.environ.get('FM_STATE_OVERRIDE') or pathlib.Path(os.environ['FM_HOME'])/'state'))
+for p in (state/'.codex-orca-continuation').glob('*.json'):
  episode=json.loads(p.read_text())
  if episode.get('phase')!='turn-started': continue
  if (episode.get('owner_generation')!=current['generation'] or episode.get('owner_pid')!=current['owner_pid']

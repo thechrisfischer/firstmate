@@ -289,7 +289,10 @@ class Adapter:
         return path
 
     def terminal(self, cli, handle):
-        rc, raw, err = self.command([cli, "terminal", "show", "--terminal", handle, "--json"])
+        try:
+            rc, raw, err = self.command([cli, "terminal", "show", "--terminal", handle, "--json"])
+        except OSError as e:
+            raise Unavailable("exact terminal identity unavailable: " + str(e)) from e
         if rc:
             raise Unavailable("exact terminal identity unavailable: " + err.strip())
         try:

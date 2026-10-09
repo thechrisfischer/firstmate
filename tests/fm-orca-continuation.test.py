@@ -34,6 +34,8 @@ if a[:2]==['terminal','show']:
  if owner and (h/'hold-show').exists() and marker.exists() and marker.read_text().startswith('announced:downtime:'):
   deadline=time.monotonic()+4
   while (h/'hold-show').exists() and time.monotonic()<deadline: time.sleep(.05)
+ if mode=='create-no-owner-hang' and (h/'creates').exists():
+  import signal; signal.signal(signal.SIGTERM,signal.SIG_IGN); time.sleep(60)
  if owner and (h/'hold-gate').exists() and rec.exists() and json.loads(rec.read_text()).get('transport'):
   deadline=time.monotonic()+10
   while (h/'hold-gate').exists() and time.monotonic()<deadline: time.sleep(.05)
@@ -52,7 +54,7 @@ elif a[:2]==['terminal','create']:
  if mode=='create-ambiguous':
   print('fixture creation receipt unavailable',file=sys.stderr);sys.exit(1)
  with (h/'terminals').open('a') as f: f.write(json.dumps({'handle':'term-owner','title':a[a.index('--title')+1]})+'\n')
- if mode=='create-no-owner':
+ if mode in ('create-no-owner','create-no-owner-hang'):
   print(json.dumps({'ok':True,'result':{'terminal':{'handle':'term-owner'}}}));sys.exit(0)
  if mode=='create-error-created':
   print('fixture creation receipt unavailable after create',file=sys.stderr);sys.exit(1)
@@ -840,6 +842,46 @@ class ContinuationTests(unittest.TestCase):
         self.assertEqual(withheld["permitted_retry"], "request-stable")
         self.assertEqual(len(withheld["attempts"]), 1)
 
+    def test_missing_cli_while_idle_retains_owner(self):
+        f = self.fixture()
+        first = f.ensure()
+        cli = f.home / "orca"
+        cli.rename(f.home / "orca.away")
+        time.sleep(4)
+        (f.home / "orca.away").rename(cli)
+        self.assertEqual(f.record()["owner_pid"], first["owner_pid"])
+        self.assertNotEqual(f.record().get("phase"), "failed")
+        self.assertTrue(json.loads(f.call("status").stdout)["ready"])
+
+    def test_retry_is_withheld_after_generation_supersession(self):
+        f = self.fixture(mode="ambiguous-held")
+        f.ensure(); f.trigger()
+        f.wait(lambda: len(f.sends()) == 1, "first ambiguous attempt missing")
+        generation = f.record()["episode"]["generation"]
+        f.note("append that supersedes the ambiguous generation")
+        self.assertNotEqual((f.home / "state/.watcher-down").read_text().strip().split(":")[-1], generation)
+        (f.home / "release-send").touch()
+        receipt = f.home / "state/.codex-orca-continuation" / (generation + ".json")
+        f.wait(receipt.exists, "withheld retry left no delivery receipt")
+        time.sleep(1)
+        self.assertEqual(len(f.sends()), 1)
+        self.assertEqual(len(json.loads(receipt.read_text())["attempts"]), 1)
+
+    def test_ack_during_retry_gate_release_sends_once(self):
+        f = self.fixture(mode="ambiguous-held")
+        f.ensure(); f.trigger()
+        f.wait(lambda: len(f.sends()) == 1, "first ambiguous attempt missing")
+        (f.home / "hold-gate").touch(); (f.home / "release-send").touch()
+        f.wait(lambda: bool(f.record().get("transport")) and f.record().get("episode", {}).get("permitted_retry"),
+               "retry transport was not published")
+        transport = f.record()["transport"]
+        f.ack()
+        (f.home / "hold-gate").unlink()
+        f.wait(lambda: subprocess.run(["ps", "-p", str(transport["pid"])], capture_output=True).returncode != 0,
+               "withheld retry transport survived")
+        time.sleep(1)
+        self.assertEqual(len(f.sends()), 1)
+
     def test_ack_during_gate_release_sends_nothing(self):
         f = self.fixture()
         f.ensure()
@@ -944,6 +986,25 @@ class ContinuationTests(unittest.TestCase):
         self.assertEqual(stop.returncode, 2, stop.stderr)
         self.assertIn("Orca owner/delivery is unconfirmed", stop.stderr)
         self.assertEqual((f.home / "creates").read_text().count("create"), 1)
+        self.assertEqual(f.sends(), [])
+
+    def test_registered_stop_hook_refuses_in_budget_when_cli_hangs_after_create(self):
+        f = self.fixture(mode="create-no-owner-hang")
+        hook = json.loads((ROOT / ".codex/hooks.json").read_text())["hooks"]["Stop"][0]["hooks"][0]
+        env = {k: v for k, v in f.env.items() if k != "CLAUDECODE"}
+        env["FM_ROOT_OVERRIDE"] = str(f.home)
+        codex = TMP / (self._testMethodName + "-codex")
+        codex.symlink_to(shutil.which("bash"))
+        started = time.monotonic()
+        stop = subprocess.run([str(codex), "-c", hook["command"] + "; rc=$?; exit $rc"], cwd=ROOT, env=env,
+                              capture_output=True, text=True,
+                              input='{"stop_hook_active":false}', timeout=hook["timeout"] + 30)
+        elapsed = time.monotonic() - started
+        self.assertLess(elapsed, hook["timeout"] - 5, stop.stderr)
+        self.assertEqual(stop.returncode, 2, stop.stderr)
+        self.assertIn("SUPERVISION IS OFF", stop.stderr)
+        self.assertIn("owner readiness unconfirmed", stop.stderr)
+        self.assertIn("verify or restore the Orca-owned continuation", stop.stderr)
         self.assertEqual(f.sends(), [])
 
     def test_symlinked_receipt_directory_is_refused(self):
