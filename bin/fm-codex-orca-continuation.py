@@ -254,8 +254,7 @@ class Adapter:
     def cli(self):
         selected = os.environ.get("ORCA_CLI_COMMAND")
         if not selected:
-            selected = "orca-dev" if os.environ.get("ORCA_DEV_REPO_ROOT") else (
-                "orca-ide" if sys.platform.startswith("linux") and not os.environ.get("ORCA_TERMINAL_HANDLE") else "orca")
+            selected = "orca-dev" if os.environ.get("ORCA_DEV_REPO_ROOT") else "orca"
         path = shutil.which(selected)
         if not path:
             raise Refused("selected Orca CLI is unavailable: " + selected)
@@ -278,7 +277,7 @@ class Adapter:
             if result["worktreeId"].split("::", 1)[1] != str(self.home):
                 raise ValueError("terminal worktree is not this primary home")
             return result
-        except (ValueError, KeyError, TypeError, IndexError) as e:
+        except (ValueError, KeyError, TypeError, IndexError, AttributeError) as e:
             raise Refused("refusing unverified Orca terminal: " + str(e)) from e
 
     def target_valid(self):
@@ -328,8 +327,10 @@ class Adapter:
     def bootstrap(self, binding, cli, target, end):
         old = self.read(self.record_path)
         alive = old.get("owner_pid") and self.identity(old["owner_pid"]) == old.get("owner_identity")
+        same_primary = all((old.get("binding") or {}).get(k) == binding[k]
+                           for k in ("session_pid", "session_identity", "target"))
         if alive:
-            if old.get("binding") != binding:
+            if not same_primary:
                 raise Refused("live owner has another primary/runtime binding; no adoption")
             while not self.ready(old):
                 if old.get("phase") not in ("arming", "ready") or time.monotonic() >= end - 2:
@@ -341,8 +342,6 @@ class Adapter:
             raise Refused("bootstrap generation " + str(old.get("generation")) + " is already pending; inspect status, "
                           "then use abandon-launch for that generation only once its owner is gone")
         self.confirmed(old)
-        same_primary = all((old.get("binding") or {}).get(k) == binding[k]
-                           for k in ("session_pid", "session_identity", "target"))
         generation = uuid.uuid4().hex
         self.record = dict(old, binding=binding, generation=generation, owner_pid=None,
                            owner_identity=None, phase="launching", previous_arm=old.get("arm"))
@@ -371,7 +370,7 @@ class Adapter:
                 raise ValueError("missing exact owner terminal receipt")
             receipt["owner_terminal"] = created["result"]["terminal"]["handle"]
             self.atomic(self.receipts / (generation + ".bootstrap.json"), receipt)
-        except (ValueError, KeyError, TypeError) as e:
+        except (ValueError, KeyError, TypeError, AttributeError) as e:
             raise Refused("owner terminal receipt unconfirmed; inspect before repeating") from e
         while time.monotonic() < end:
             current = self.read(self.record_path)
@@ -445,7 +444,7 @@ class Adapter:
                 terminals = json.loads(raw)["result"]["terminals"] if rc == 0 else None
                 handles = {t["handle"] for t in terminals}
                 titles = [t.get("title") or "" for t in terminals]
-            except (ValueError, KeyError, TypeError) as e:
+            except (ValueError, KeyError, TypeError, AttributeError) as e:
                 raise Refused("owner terminal absence unproven: terminal list unreadable") from e
             if current["target"]["handle"] not in handles:
                 raise Refused("owner terminal absence unproven: terminal list is incomplete")
@@ -657,7 +656,7 @@ class Adapter:
                     break
                 if v.get("ok") is False:
                     episode["phase"] = "delivery-rejected"
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, AttributeError):
                 pass
             # The installed CLI's reported exact retry command is the authority.
             match = re.search(r"--retry-request[ =]+([A-Za-z0-9_-]+)", out + "\n" + err)

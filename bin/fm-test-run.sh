@@ -1464,6 +1464,11 @@ families_for_changed_path() {
       printf '%s\n' cmux
       printf '%s\n' backend-dispatch
       ;;
+    bin/backends/orca.sh)
+      printf '%s\n' backend-dispatch
+      printf '%s\n' orca
+      printf '%s\n' '__script__:fm-codex-orca-continuation.test.sh'
+      ;;
     bin/backends/orca*|bin/backends/tmux.sh)
       printf '%s\n' backend-dispatch
       printf '%s\n' orca

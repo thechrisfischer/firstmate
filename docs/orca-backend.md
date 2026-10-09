@@ -76,7 +76,7 @@ Workers, other runtimes, away mode and supervision-host homes keep their existin
 The rendered [Orca/Codex protocol](supervision-protocols/codex-orca.md) owns the agent operation, and [`fm-codex-orca-continuation.py`](../bin/fm-codex-orca-continuation.py) owns exact commands, receipt states and cleanup mechanics.
 
 The continuation process requires Python 3.9 or newer and local macOS/Linux process and file-lock support.
-Its Linux CLI selection follows Orca's exported command or managed-terminal context; outside a managed Linux terminal the installed Orca CLI is `orca-ide`, because bare `orca` can name the desktop screen reader.
+Its CLI selection follows Orca's exported `ORCA_CLI_COMMAND`, then `orca-dev` for a development checkout, then `orca`; every operation runs inside a managed Orca terminal.
 That continuation boundary does not establish Linux support for this backend's separate spawn/teardown implementation.
 The adapter accepts no remote-pairing selectors or endpoint-adoption operation.
 A changed primary PID/birth/runtime/incarnation fails explicitly without rebinding.
