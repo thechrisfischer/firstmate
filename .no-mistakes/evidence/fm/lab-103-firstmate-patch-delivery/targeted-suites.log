@@ -1,0 +1,379 @@
+FM_TEST_BEGIN 2026-10-09T19:17:19Z tests/fm-supervision-instructions.test.sh family=pure-contract-unit expected_gate_skip=none
+ok - renderer adds the supervision-host protocol on a claude home unless config/supervision-host-off opts it out, leaving the claude block intact
+ok - renderer gives each non-Pi arm owner the host protocol in its own terms, and grok arms the host
+ok - renderer prints exactly the selected harness block
+ok - renderer falls back to unknown.md for unverified harness names
+ok - renderer includes read-only, afk, and effective x-mode current-state stanzas
+ok - renderer's away/quiet stanzas are mode-aware, default to away, and fall back safely on garbage input
+ok - renderer repair-line mode is harness-aware and honors conditional state
+ok - renderer preserves every harness ordinary-continuation and missing-cycle repair path
+ok - pi-signed keeps its identity while sharing Pi's supervision protocol
+ok - grok supervision is Claude-shaped background notify with passive Stop-hook backstop
+ok - grok rendered command sources the effective x-mode config
+ok - pi supervision snippet renders the effective extension path
+FM_TEST_END 2026-10-09T19:17:23Z tests/fm-supervision-instructions.test.sh exit=0 duration_ms=3494 gate_skip=false
+FM_TEST_BEGIN 2026-10-09T19:17:23Z tests/fm-wake-queue.test.sh family=watcher-wake-lock expected_gate_skip=none
+FM_TEST_BEGIN 2026-10-09T19:17:23Z tests/fm-codex-orca-continuation.test.sh family=watcher-wake-lock expected_gate_skip=none
+FM_TEST_BEGIN 2026-10-09T19:17:23Z tests/fm-turnend-guard.test.sh family=watcher-wake-lock expected_gate_skip=none
+FM_TEST_BEGIN 2026-10-09T19:17:23Z tests/fm-watch-checkpoint.test.sh family=watcher-wake-lock expected_gate_skip=none
+ok - checkpoint: Perl fallback preserves ordinary exits, child signals, timeout and wakes
+ok - quiet checkpoint exits 124 with a clean checkpoint line and no live lock
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 34019.1791573449.8SSCWf
+ok - checkpoint passes through a real watcher wake and leaves the queue for drain
+ok - checkpoint preserves watcher environment for registered custom checks
+ok - checkpoint rejects an existing watcher singleton as unowned
+ok - checkpoint: an opted-in home runs the host for the checkpoint's bound, raised only while away
+ok - checkpoint: a handed-back wake passes through, and a host stand-down is a failure
+ok - checkpoint: a Codex home without config/supervision-host, or with an off file, never runs the host
+ok - checkpoint: the real host ends its park at the checkpoint bound as a quiet checkpoint
+FM_TEST_END 2026-10-09T19:17:40Z tests/fm-watch-checkpoint.test.sh exit=0 duration_ms=17405 gate_skip=false
+ok - fm_supervision_unhealthy: false with no state/*.meta at all
+ok - fm_supervision_unhealthy: true with in-flight task and no beacon ever
+ok - fm_supervision_unhealthy: true with in-flight task and a beacon far outside the grace window
+ok - fm_supervision_unhealthy: false with in-flight task and a fresh beacon
+ok - fm_supervision_status: FM_SUP_QUEUE_PENDING tracks state/.wake-queue
+ok - fm_supervision_needed: X-mode relay poll needs supervision
+ok - fm_supervision_unhealthy: source-only home needs supervision
+ok - fm_supervision_needed: a registered custom check needs supervision with no task in flight
+ok - fm_supervision_needed: a registered check whose bytes drifted still needs supervision
+ok - fm_supervision_needed: false for a check.sh with no registration binding
+ok - fm_supervision_needed: a task PR poll without a trust binding is not a registered custom check
+ok - fm_supervision_status: the relay shim is not counted as a registered custom check
+ok - fm-turnend-guard: silent no-op with nothing in flight
+ok - fm-turnend-guard: blocks when a fresh beacon has no live watcher lock
+ok - fm-turnend-guard: non-Claude path blocks a source-only home
+ok - fm-turnend-guard: blocks on a dead watcher lock even when the beacon is fresh
+ok - fm-turnend-guard: silent no-op with a live watcher lock and fresh beacon
+ok - fm-turnend-guard: healthy non-Claude harness paths ignore Claude episode contention
+ok - fm-turnend-guard: blocks on a live watcher lock with an ancient beacon
+ok - fm-turnend-guard: blocks with the exact required reason in the primary when unhealthy
+ok - fm-turnend-guard: blocks from active FM_HOME state, not only repo-root state
+ok - fm-turnend-guard: X-mode repair reason sources the cadence config
+ok - fm-turnend-guard: X-mode-only supervision remains guarded in default mode
+ok - fm-turnend-guard: registered-check-only supervision is named in the block banner
+ok - fm-turnend-guard: ignores stale repo-root state when FM_HOME is set
+ok - fm-turnend-guard: uses FM_STATE_OVERRIDE ahead of FM_HOME/state
+ok - fm-turnend-guard: stop_hook_active=true always allows the stop (never blocks twice in one turn)
+ok - fm-turnend-guard: blocks a blind turn end in a secondmate's own home (.fm-secondmate-home no longer excludes it)
+ok - fm-turnend-guard: idle-by-default - silent in a secondmate home with nothing in flight
+ok - fm-turnend-guard: stop_hook_active=true allows the stop in a secondmate home (never blocks twice in one turn)
+ok - fm-turnend-guard: secondmate deferred-death recovery - silent while watched, forces re-arm once the watcher exits
+ok - fm-turnend-guard: inert in a secondmate's own child worktree (linked git worktree) even when unhealthy
+ok - fm-turnend-guard: blocks a blind turn end in a treehouse-leased LINKED secondmate home (marker force-include)
+ok - fm-turnend-guard: an invalid (empty) marker cannot spoof inclusion; linked worktree stays exempt
+ok - fm-turnend-guard: a non-ASCII marker cannot spoof inclusion; linked worktree stays exempt
+ok - fm-turnend-guard: inert in a crewmate/scout task worktree (linked git worktree) even when unhealthy
+ok - fm-turnend-guard: fails open (never blocks) when jq is missing
+ok - fm-turnend-guard: silent no-op on empty stdin
+ok - fm-turnend-guard: runs well under the generous timing margin (1s)
+ok - fm-turnend-guard-grok: forces one explicitly marked same-session resume when the shared predicate blocks
+ok - fm-turnend-guard-grok: legacy environment loop guard prevents a nested resume loop
+ok - fm-turnend-guard-grok: native false delegates blocking feedback with zero resume processes
+ok - fm-turnend-guard-grok: native true remains bounded and starts no resume process
+ok - fm-turnend-guard-grok: both spellings are typed and camelCase has deterministic precedence
+ok - fm-turnend-guard-grok: malformed, invalidly typed, and missing-prerequisite payloads start neither path
+ok - fm-turnend-guard-grok: missing jq and no-supervision-needed stops stay silent and bounded
+ok - tracked .claude/settings.json entries: 7 inert under grok, the documented subagent exception still armed, all live under Claude
+ok - .codex/hooks.json: Stop hook uses hook process root when payload cwd is outside
+ok - .codex/hooks.json: Stop hook routes through the Orca glue, which preserves the guard verdict
+ok - .codex/hooks.json: Stop hook ignores nested git root guard scripts
+ok - .opencode primary plugin: guard path is anchored to worktree, not directory
+ok - .pi primary extension: no-tool and multi-tool runs each inject exactly one guard follow-up
+ok - .pi primary extension: delivery failure resets the logical-run latch
+ok - fm-turnend-guard --claude: re-blocks a loop-guarded stop while unhealthy and unclaimed (incident regression)
+ok - fm-turnend-guard --claude: X-mode-only homes re-block when auto-arm recovery is absent
+ok - fm-turnend-guard --claude: a live arming epoch advances once and repeated observation is idempotent
+ok - fm-turnend-guard --claude: repeated failed-to-arming races make bounded monotonic progress
+ok - fm-turnend-guard --claude: terminal owner boundary excludes a concurrent start without deadlock
+ok - fm-turnend-guard --claude: fresh rewake epoch prevents a duplicate continuation for the same event
+ok - fm-turnend-guard --claude: an abandoned auto-arm claim no longer allows a blind stop (incident regression)
+ok - fm-turnend-guard --claude: a claim whose pid was reused stops counting as recovery even while its entry reads arming
+ok - fm-turnend-guard --claude: a hung owner frozen at arming with no watcher beat no longer allows a blind stop
+ok - fm-turnend-guard --claude: a live open generation claim owns recovery with no lock held
+ok - fm-turnend-guard --claude: a stuck generation claim no longer allows a blind stop
+ok - fm-turnend-guard --claude: the terminal path clears an abandoned claim instead of stepping aside silently
+ok - fm-turnend-guard --claude: fresh failed epochs preserve and advance monotonic fail-open progression
+ok - fm-turnend-guard --claude: integrated fresh failures reach one bounded fail-open, stop continuation, and reset on recovery
+ok - fm-turnend-guard --claude: an inert auto-arm's frozen epoch reaches one bounded fail-open and resets on recovery
+ok - fm-turnend-guard --claude: a frozen unverified epoch spends the budget yet still blocks
+ok - fm-turnend-guard --claude: reset contention preserves all episode state until retry
+ok - fm-turnend-guard --claude: concurrent auto-arm and guard resets are idempotent and deadlock-free
+ok - fm-turnend-guard --claude: stale rewake epoch does not allow a blind stop
+ok - fm-turnend-guard --claude: budget exhaustion alone cannot permit a blind stop
+ok - fm-turnend-guard --claude: verified fail-open is loud, bounded, attended, and non-repeating
+ok - fm-turnend-guard --claude: fail-open requires both exhausted retries and consumed notice
+ok - fm-turnend-guard --claude: away ownership excludes the Stop-autoarm fail-open
+ok - fm-turnend-guard --claude: positive watcher recovery resets failure episode state
+ok - fm-turnend-guard --claude: bounded claim wait avoids a token-consuming forced continuation
+ok - fm-turnend-guard --claude: secondmate home re-blocks unclaimed and allows auto-arm-claimed stops
+ok - fm-turnend-guard: a live away-mode daemon satisfies supervision with no watcher holding the lock
+ok - fm-turnend-guard: away-mode daemon ownership survives a leftover dead watcher lock
+ok - fm-turnend-guard: away mode with no daemon and no watcher still blocks
+ok - fm-turnend-guard: away mode blocks on a dead away-mode daemon
+ok - fm-turnend-guard: away mode blocks on a pid-reused away-mode daemon lock
+ok - fm-turnend-guard: away-mode daemon ownership never substitutes for a fresh beacon
+ok - fm-turnend-guard: a daemon lock proves nothing while away mode is off
+ok - fm-turnend-guard: away-mode beacon freshness uses the poll-derived grace, not the flat default
+ok - fm-turnend-guard: a dead away-mode daemon still blocks under the poll-derived grace
+ok - fm-turnend-guard: the poll-derived grace is bounded, not unlimited
+ok - fm-turnend-guard: with away mode off, the poll-derived grace never applies
+FM_TEST_END 2026-10-09T19:18:56Z tests/fm-turnend-guard.test.sh exit=0 duration_ms=93308 gate_skip=false
+ok - wake drain: failed queue ACK commit retains retry evidence; success and stale replay protect successor
+ok - an abandoned same-process lock hold is reclaimed; a parent's live hold is not
+ok - without BASHPID a subshell cannot release or reclaim its parent lock and owns its own hold
+ok - bounded acquire hands ownership to the waiting caller after contention
+ok - presentation lock waits are bounded and retriable without weakening acknowledgement atomicity
+ok - malformed presentation locks report acquire failure instead of contention
+tests/wake-helpers.sh: line 319: 52607 Killed: 9                  PATH="$dir/fakebin:$PATH" FM_FAKE_NOW_FILE="$dir/now" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" FM_STATE_OVERRIDE="$dir/state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' FM_SECONDMATE_WAKE_STALL_SECS=1 FM_SECONDMATE_LIVENESS_SECS=99999999 FM_POLL=1 FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$dir/watch-$leg.out" 2> "$dir/watch-$leg.err"
+tests/wake-helpers.sh: line 319: 53396 Killed: 9                  PATH="$dir/fakebin:$PATH" FM_FAKE_NOW_FILE="$dir/now" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" FM_STATE_OVERRIDE="$dir/state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' FM_SECONDMATE_WAKE_STALL_SECS=1 FM_SECONDMATE_LIVENESS_SECS=99999999 FM_POLL=1 FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$dir/watch-$leg.out" 2> "$dir/watch-$leg.err"
+tests/wake-helpers.sh: line 319: 57387 Killed: 9                  PATH="$dir/fakebin:$PATH" FM_FAKE_NOW_FILE="$dir/now" FM_HOME="$dir" FM_ROOT_OVERRIDE="$ROOT" FM_STATE_OVERRIDE="$dir/state" FM_FAKE_TMUX_WINDOW='firstmate:fm-mate' FM_SECONDMATE_WAKE_STALL_SECS=1 FM_SECONDMATE_LIVENESS_SECS=99999999 FM_POLL=1 FM_SIGNAL_GRACE=0 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$dir/watch-$leg.out" 2> "$dir/watch-$leg.err"
+ok - foreign secondmate queue alerts once per no-progress episode without age-only or cascade noise
+ok - declared external-wait pause rows do not feed secondmate wake-loop escalation
+ok - a reprovisioned queue generation starts a fresh no-progress interval
+ok - an active turn defers the secondmate stall escalation without cancelling it
+ok - a long-lived mate mid-turn is not a stall, but a queue frozen past the busy bound still alarms
+ok - a proven-idle leftover row is rung so the child home can drain without a parent alarm
+ok - TERM stops a watcher blocked in the drain-ring idle capture and runs its cleanup
+ok - busy panes defer without a ring and unknown panes keep the parent alarm
+ok - a leftover row that survives a proven-idle ring still surfaces as a genuine stall
+ok - secondmate stall markers reject symlinks without touching their targets
+ok - stall publication acknowledgement closes the pre-marker crash window
+ok - empty prefix mate cleanup preserves another mate's stall receipt
+ok - self-announced appends suppress only their own bytes and fail toward waking
+ok - separate self-announced answers after a fold stay owned; worker decisions and later lines still wake
+ok - an unreadable status still reads as unreported, with or without owned growth
+ok - a worker resolved in fold lag still wakes after this home's close
+ok - owned growth suppresses the wake without hiding the turn-ended annotation
+ok - historical annotations replay nothing already announced and keep everything new
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 12 --recovery-generation 38428.1791573534.rEYwhJ
+ok - concurrent append plus drain preserves durable records through acknowledgement
+ok - signal written while no watcher runs is caught on next run
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 68594.1791573556.R4OEG1
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+ok - stale wake is queued before suppressor state is advanced
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 71541.1791573560.mVXheE
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+ok - a not-provably-working stale wake is queued before its suppressor is advanced
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 74907.1791573563.lYEzbL
+WARNING: queued wakes pending - drain them with bin/fm-wake-drain.sh before anything else.
+ok - registered custom check output is queued before cadence suppression
+ok - concurrent drains replay until one post-handling acknowledgement consumes records
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 4 --recovery-generation 83265.1791573569.0pWAug
+ok - drain collapses obvious duplicate heartbeat and signal records
+ok - drain asserts watcher liveness: warns on a lapse, stays silent for a live watcher with a fresh beacon
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 8 --recovery-generation 88296.1791573572.ipFysZ
+ok - structural signal enrichment is separate, deduped, home-local, and tier-zero for other wakes
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 13 --recovery-generation 92494.1791573575.dDxrgG
+ok - every readable unread status line is annotated in full while invalid status files preserve their raw wakes
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation 96434.1791573580.FPw1UD
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 2 --recovery-generation 96434.1791573580.FPw1UD
+ok - slow annotation releases the append lock and a deleted status file fails open
+ok - a branch-actor scoped ack never swallows an unacked main-owned row, and main's later drain sees exactly what remains
+ok - main drain and acknowledgement exclude an active branch grant
+ok - a branch-actor acknowledgement commits secondmate stall receipts for exactly its granted rows
+ok - a branch-held row raises no queued-wake warning for main, and the same row is presented and acknowledged once the grant clears
+ok - a queue that cannot be counted keeps the queued-wake alarm up
+ok - structurally unusable rows are retired by main alone, leaving every remaining row presentable and acknowledgeable
+ok - branch grant cannot take a row already claimed by main
+ok - main's acknowledgement leaves a row that arrived after its drain for whichever actor takes it next
+ok - actor ownership filtering precedes same-key deduplication
+ok - main reclaims rows granted to an exited branch owner
+ok - a branch-actor drain with no eligible-row snapshot refuses loudly instead of draining nothing
+WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --ack-through 1 --recovery-generation existing
+ok - wake append publishes atomic recovery evidence before durable rows
+ok - recovery mint and delivery log avoid sibling $()
+ok - wake drain: generation-less legacy wakes are adopted and acknowledged
+ok - a handover undoes only the downtime its own stop published over an acknowledged episode
+ok - wake drain: a stale acknowledgement cannot retire or consume a newer recovery episode
+ok - wake drain: an acknowledgement that consumes nothing says so and names the exact command for the current wake
+ok - wake drain: a branch acknowledgement that consumes nothing names the exact command for its granted wake
+ok - wake drain: recovery acknowledgement failures are explicit and retryable
+ok - interruptions preserve durable rows until post-handling acknowledgement
+ok - fm_wake_queue_prune_task: prunes wakes for target task without touching other tasks
+ok - drain rotates scratch files an interrupted drain left under the queue lock
+ok - watch liveness: a dead secondmate is relaunched once, ledgered, and quiet afterwards
+ok - watch liveness: a missing secondmate endpoint is relaunched without a pre-kill
+ok - watch liveness: one tick relaunches every dead mate, queues a row each, and wakes once
+ok - watch liveness: alive and ambiguous endpoints are probed, logged, and never touched
+ok - watch liveness: the cadence marker gates probing and survives across legs
+ok - watch liveness: the attempt bound parks a flapping mate once and a live probe rearms a full budget
+ok - watch liveness: a failed auto-relaunch wakes once with its cause and is ledgered
+ok - watch liveness: an unwritable or unreadable relaunch ledger refuses to kill or spawn
+ok - watch liveness: a per-mate error keeps scanning, recovers later mates, and still wakes
+ok - watch liveness: an outcome that could not be queued surfaces as an error, not a wake
+ok - watch liveness: a mate mid-episode under the shared liveness lock is skipped entirely
+ok - watch liveness: an unreachable remote secondmate is probed, preserved, and never failed over
+FM_TEST_END 2026-10-09T19:22:14Z tests/fm-wake-queue.test.sh exit=0 duration_ms=291602 gate_skip=false
+test_abandon_launch_after_primary_moves_terminal (__main__.ContinuationTests.test_abandon_launch_after_primary_moves_terminal) ... ok
+test_abandon_launch_refuses_live_owner_terminal (__main__.ContinuationTests.test_abandon_launch_refuses_live_owner_terminal) ... ok
+test_abandon_launch_requires_proven_owner_absence (__main__.ContinuationTests.test_abandon_launch_requires_proven_owner_absence) ... cleanup: test_abandon_launch_requires_proven_owner_absence owner/arm/transport absent; watcher lock absent
+ok
+test_acceptance_is_distinct_and_no_resend (__main__.ContinuationTests.test_acceptance_is_distinct_and_no_resend) ... cleanup: test_acceptance_is_distinct_and_no_resend owner/arm/transport absent; watcher lock absent
+ok
+test_ack_during_gate_release_sends_nothing (__main__.ContinuationTests.test_ack_during_gate_release_sends_nothing) ... cleanup: test_ack_during_gate_release_sends_nothing owner/arm/transport absent; watcher lock absent
+ok
+test_ack_during_retry_gate_release_sends_once (__main__.ContinuationTests.test_ack_during_retry_gate_release_sends_once) ... cleanup: test_ack_during_retry_gate_release_sends_once owner/arm/transport absent; watcher lock absent
+ok
+test_ack_during_successor_startup_is_never_presented (__main__.ContinuationTests.test_ack_during_successor_startup_is_never_presented) ... cleanup: test_ack_during_successor_startup_is_never_presented owner/arm/transport absent; watcher lock absent
+ok
+test_ack_then_new_generation_keeps_live_owner_reusable (__main__.ContinuationTests.test_ack_then_new_generation_keeps_live_owner_reusable) ... cleanup: test_ack_then_new_generation_keeps_live_owner_reusable owner/arm/transport absent; watcher lock absent
+ok
+test_before_send_refusal_records_no_unsent_episode (__main__.ContinuationTests.test_before_send_refusal_records_no_unsent_episode) ... cleanup: test_before_send_refusal_records_no_unsent_episode owner/arm/transport absent; watcher lock absent
+ok
+test_changed_primary_binding_never_resolves_ambiguous_delivery (__main__.ContinuationTests.test_changed_primary_binding_never_resolves_ambiguous_delivery) ... cleanup: test_changed_primary_binding_never_resolves_ambiguous_delivery owner/arm/transport absent; watcher lock absent
+ok
+test_changed_primary_identity_fails_and_cleans (__main__.ContinuationTests.test_changed_primary_identity_fails_and_cleans) ... cleanup: test_changed_primary_identity_fails_and_cleans owner/arm/transport absent; watcher lock absent
+ok
+test_dead_owner_relaunches_after_ack_and_fresh_append (__main__.ContinuationTests.test_dead_owner_relaunches_after_ack_and_fresh_append) ... cleanup: test_dead_owner_relaunches_after_ack_and_fresh_append owner/arm/transport absent; watcher lock absent
+ok
+test_ensure_waits_for_live_owner_rearm (__main__.ContinuationTests.test_ensure_waits_for_live_owner_rearm) ... cleanup: test_ensure_waits_for_live_owner_rearm owner/arm/transport absent; watcher lock absent
+ok
+test_exact_ambiguous_retry (__main__.ContinuationTests.test_exact_ambiguous_retry) ... cleanup: test_exact_ambiguous_retry owner/arm/transport absent; watcher lock absent
+ok
+test_exact_retry_is_bounded_to_one (__main__.ContinuationTests.test_exact_retry_is_bounded_to_one) ... cleanup: test_exact_retry_is_bounded_to_one owner/arm/transport absent; watcher lock absent
+ok
+test_external_inbox_ack_and_append_during_input (__main__.ContinuationTests.test_external_inbox_ack_and_append_during_input) ... cleanup: test_external_inbox_ack_and_append_during_input owner/arm/transport absent; watcher lock absent
+ok
+test_external_inbox_attached_peer_is_preserved (__main__.ContinuationTests.test_external_inbox_attached_peer_is_preserved) ... cleanup: test_external_inbox_attached_peer_is_preserved owner/arm/transport absent; watcher lock absent
+ok
+test_external_inbox_during_predecessor_close (__main__.ContinuationTests.test_external_inbox_during_predecessor_close) ... cleanup: test_external_inbox_during_predecessor_close owner/arm/transport absent; watcher lock absent
+ok
+test_external_inbox_endpoint_replacement_never_rebinds (__main__.ContinuationTests.test_external_inbox_endpoint_replacement_never_rebinds) ... cleanup: test_external_inbox_endpoint_replacement_never_rebinds owner/arm/transport absent; watcher lock absent
+ok
+test_external_inbox_rejection_and_owner_replacement (__main__.ContinuationTests.test_external_inbox_rejection_and_owner_replacement) ... cleanup: test_external_inbox_rejection_and_owner_replacement owner/arm/transport absent; watcher lock absent
+ok
+test_external_inbox_repeated_ack_and_interrupted_replay (__main__.ContinuationTests.test_external_inbox_repeated_ack_and_interrupted_replay) ... cleanup: test_external_inbox_repeated_ack_and_interrupted_replay owner/arm/transport absent; watcher lock absent
+ok
+test_failed_confirmed_bootstrap_does_not_wedge_ensure (__main__.ContinuationTests.test_failed_confirmed_bootstrap_does_not_wedge_ensure) ... cleanup: test_failed_confirmed_bootstrap_does_not_wedge_ensure owner/arm/transport absent; watcher lock absent
+ok
+test_interrupted_handling_turn_is_represented_once (__main__.ContinuationTests.test_interrupted_handling_turn_is_represented_once) ... cleanup: test_interrupted_handling_turn_is_represented_once owner/arm/transport absent; watcher lock absent
+ok
+test_late_owner_never_runs_an_abandoned_launch (__main__.ContinuationTests.test_late_owner_never_runs_an_abandoned_launch) ... ok
+test_live_owner_reuse_allows_cli_spelling_but_not_code_root (__main__.ContinuationTests.test_live_owner_reuse_allows_cli_spelling_but_not_code_root) ... cleanup: test_live_owner_reuse_allows_cli_spelling_but_not_code_root owner/arm/transport absent; watcher lock absent
+ok
+test_loaded_guard_requires_the_owner_watcher_code_path (__main__.ContinuationTests.test_loaded_guard_requires_the_owner_watcher_code_path) ... cleanup: test_loaded_guard_requires_the_owner_watcher_code_path owner/arm/transport absent; watcher lock absent
+cleanup: test_loaded_guard_requires_the_owner_watcher_code_path owner/arm/transport absent; watcher lock absent
+ok
+test_missing_cli_while_idle_retains_owner (__main__.ContinuationTests.test_missing_cli_while_idle_retains_owner) ... cleanup: test_missing_cli_while_idle_retains_owner owner/arm/transport absent; watcher lock absent
+ok
+test_owner_death_before_gate_release_never_sends (__main__.ContinuationTests.test_owner_death_before_gate_release_never_sends) ... cleanup: test_owner_death_before_gate_release_never_sends owner/arm/transport absent; watcher lock absent
+ok
+test_owner_death_during_input_does_not_fresh_resend (__main__.ContinuationTests.test_owner_death_during_input_does_not_fresh_resend) ... cleanup: test_owner_death_during_input_does_not_fresh_resend owner/arm/transport absent; watcher lock absent
+ok
+test_owner_death_restart_keeps_one_watcher (__main__.ContinuationTests.test_owner_death_restart_keeps_one_watcher) ... cleanup: test_owner_death_restart_keeps_one_watcher owner/arm/transport absent; watcher lock absent
+ok
+test_registered_stop_hook_refuses_in_budget_when_cli_hangs_after_create (__main__.ContinuationTests.test_registered_stop_hook_refuses_in_budget_when_cli_hangs_after_create) ... ok
+test_rejection_and_timeout_preserve_queue (__main__.ContinuationTests.test_rejection_and_timeout_preserve_queue) ... cleanup: test_rejection_and_timeout_preserve_queuereject owner/arm/transport absent; watcher lock absent
+cleanup: test_rejection_and_timeout_preserve_queuetimeout owner/arm/transport absent; watcher lock absent
+ok
+test_relative_overrides_reach_the_owner_terminal (__main__.ContinuationTests.test_relative_overrides_reach_the_owner_terminal) ... cleanup: test_relative_overrides_reach_the_owner_terminal owner/arm/transport absent; watcher lock absent
+ok
+test_repeated_wake_ack_successor_before_notify (__main__.ContinuationTests.test_repeated_wake_ack_successor_before_notify) ... cleanup: test_repeated_wake_ack_successor_before_notify owner/arm/transport absent; watcher lock absent
+ok
+test_restarted_owner_represents_interrupted_handling_once (__main__.ContinuationTests.test_restarted_owner_represents_interrupted_handling_once) ... cleanup: test_restarted_owner_represents_interrupted_handling_once owner/arm/transport absent; watcher lock absent
+ok
+test_retry_is_withheld_after_generation_ack (__main__.ContinuationTests.test_retry_is_withheld_after_generation_ack) ... cleanup: test_retry_is_withheld_after_generation_ack owner/arm/transport absent; watcher lock absent
+ok
+test_retry_is_withheld_after_generation_supersession (__main__.ContinuationTests.test_retry_is_withheld_after_generation_supersession) ... cleanup: test_retry_is_withheld_after_generation_supersession owner/arm/transport absent; watcher lock absent
+ok
+test_runtime_and_incarnation_refuse_and_cleanup (__main__.ContinuationTests.test_runtime_and_incarnation_refuse_and_cleanup) ... cleanup: test_runtime_and_incarnation_refuse_and_cleanupruntime-moved owner/arm/transport absent; watcher lock absent
+cleanup: test_runtime_and_incarnation_refuse_and_cleanupincarnation-moved owner/arm/transport absent; watcher lock absent
+ok
+test_same_primary_code_root_change_keeps_ambiguous_episode (__main__.ContinuationTests.test_same_primary_code_root_change_keeps_ambiguous_episode) ... cleanup: test_same_primary_code_root_change_keeps_ambiguous_episode owner/arm/transport absent; watcher lock absent
+ok
+test_stop_preserves_second_stop_and_other_backend (__main__.ContinuationTests.test_stop_preserves_second_stop_and_other_backend) ... cleanup: test_stop_preserves_second_stop_and_other_backend owner/arm/transport absent; watcher lock absent
+ok
+test_stop_refusal_fits_hook_budget_when_owner_never_readies (__main__.ContinuationTests.test_stop_refusal_fits_hook_budget_when_owner_never_readies) ... ok
+test_successor_failure_never_notifies (__main__.ContinuationTests.test_successor_failure_never_notifies) ... cleanup: test_successor_failure_never_notifies owner/arm/transport absent; watcher lock absent
+ok
+test_superseded_generation_cannot_overwrite_successor_record (__main__.ContinuationTests.test_superseded_generation_cannot_overwrite_successor_record) ... cleanup: test_superseded_generation_cannot_overwrite_successor_record owner/arm/transport absent; watcher lock absent
+ok
+test_symlinked_receipt_directory_is_refused (__main__.ContinuationTests.test_symlinked_receipt_directory_is_refused) ... ok
+test_terminated_owner_never_relaunches_over_ambiguous_delivery (__main__.ContinuationTests.test_terminated_owner_never_relaunches_over_ambiguous_delivery) ... cleanup: test_terminated_owner_never_relaunches_over_ambiguous_delivery owner/arm/transport absent; watcher lock absent
+ok
+test_transient_observation_failure_retains_owner (__main__.ContinuationTests.test_transient_observation_failure_retains_owner) ... cleanup: test_transient_observation_failure_retains_owner owner/arm/transport absent; watcher lock absent
+ok
+test_unacked_append_after_ambiguous_delivery_sends_nothing_live (__main__.ContinuationTests.test_unacked_append_after_ambiguous_delivery_sends_nothing_live) ... cleanup: test_unacked_append_after_ambiguous_delivery_sends_nothing_live owner/arm/transport absent; watcher lock absent
+ok
+test_unacked_append_and_unproven_evidence_never_relaunch (__main__.ContinuationTests.test_unacked_append_and_unproven_evidence_never_relaunch) ... cleanup: test_unacked_append_and_unproven_evidence_never_relaunch owner/arm/transport absent; watcher lock absent
+ok
+test_unconfirmed_create_never_repeats_and_renderer_is_scoped (__main__.ContinuationTests.test_unconfirmed_create_never_repeats_and_renderer_is_scoped) ... ok
+test_unverified_in_scope_binding_fails_closed_everywhere (__main__.ContinuationTests.test_unverified_in_scope_binding_fails_closed_everywhere) ... ok
+test_worker_foreign_lock_and_away_are_inapplicable (__main__.ContinuationTests.test_worker_foreign_lock_and_away_are_inapplicable) ... ok
+test_wrong_receipts_never_claim_turn_started (__main__.ContinuationTests.test_wrong_receipts_never_claim_turn_started) ... cleanup: test_wrong_receipts_never_claim_turn_startedreceipt-handle owner/arm/transport absent; watcher lock absent
+cleanup: test_wrong_receipts_never_claim_turn_startedreceipt-runtime owner/arm/transport absent; watcher lock absent
+cleanup: test_wrong_receipts_never_claim_turn_startedreceipt-incarnation owner/arm/transport absent; watcher lock absent
+cleanup: test_wrong_receipts_never_claim_turn_startedreceipt-provider owner/arm/transport absent; watcher lock absent
+cleanup: test_wrong_receipts_never_claim_turn_startedreceipt-request owner/arm/transport absent; watcher lock absent
+ok
+
+----------------------------------------------------------------------
+Ran 52 tests in 590.224s
+
+OK
+FM_TEST_END 2026-10-09T19:27:14Z tests/fm-codex-orca-continuation.test.sh exit=0 duration_ms=591291 gate_skip=false
+FM_TEST_BEGIN 2026-10-09T19:27:14Z tests/fm-backend-orca.test.sh family=orca expected_gate_skip=optional-binary
+ok - fm_backend_orca_capture: parses result.terminal.tail and calls terminal read
+ok - fm_backend_orca_capture: falls back to result text fields
+ok - fm_backend_orca_capture: fails closed on Orca read error JSON
+ok - fm_backend_orca_runtime_check: accepts reachable ready runtime
+ok - fm_backend_orca_runtime_check: fails closed when runtime is not ready
+ok - fm_backend_orca_send_text_submit: verifies empty composer after Enter with one bounded read
+ok - fm_backend_orca_send_text_submit: a borderless claude composer confirms delivery (the missing #2029 shape)
+ok - fm_backend_orca_composer_state: a stale startup banner cannot outrank the live composer row
+ok - fm_backend_orca_send_text_submit: retries Enter while composer remains pending
+ok - fm_backend_orca_composer_state: a slash-command popup's argument-hint placeholder still reads pending
+ok - fm_backend_orca_composer_state: a bare dead-shell prompt reads unknown (unsafe-for-injection), never empty
+ok - fm_backend_orca_send_text_submit: a slash-command popup's placeholder fill on Enter #1 does not short-circuit as submitted; Enter #2 is retried and lands it
+ok - fm_backend_orca_send_literal: sends text without submitting
+ok - fm_backend_orca_send_text_submit: reports send-failed when Orca send fails
+ok - Orca send helpers: fail closed on ok:false JSON
+ok - fm_backend_orca_send_key: Enter maps to empty enter, C-c maps to interrupt
+ok - fm_backend_orca_send_key: refuses unsupported keys loudly
+ok - fm_backend_orca_send_key: refuses Escape instead of mapping it to interrupt
+ok - fm_backend_orca_kill: calls terminal close and stays best-effort
+ok - fm_backend_orca_kill: a close its missing CLI never attempted reports the failure instead of a success
+ok - fm_backend_orca_remove_worktree: refuses empty worktree ids
+ok - fm_backend_orca_remove_worktree: fails closed on ok:false JSON
+ok - fm_backend_orca_worktree_path: resolves an Orca worktree id to its path
+ok - fm-backend dispatcher: accepts orca and routes capture through bin/backends/orca.sh
+ok - fm_backend_orca_json_get: ignores undocumented terminal id shapes
+ok - Orca lifecycle helpers: register repo, create worktree, create terminal, parse stable ids
+ok - fm_backend_orca_worktree_create: removes created worktree when path is missing
+ok - fm-spawn.sh --backend orca: preserves metadata when pathless cleanup fails
+ok - fm-spawn.sh --backend orca: reuses implicit terminal, records metadata, launches harness
+ok - fm-spawn.sh --backend orca --secondmate: refuses before secondmate-home mutation
+ok - fm-spawn.sh --backend orca: refuses before mutation when Orca runtime is not ready
+ok - fm-spawn.sh --backend orca: refuses non-isolated worktrees and closes implicit terminals
+ok - fm-spawn.sh --backend orca: removes worktree when terminal creation fails
+ok - fm-spawn.sh --backend orca: preserves metadata when abort cleanup fails
+ok - fm-spawn.sh --backend orca: releases terminal and worktree on later aborts
+ok - fm-peek/fm-send/fm-crew-state route through backend=orca metadata and its durable inbox
+ok - fm-peek/fm-crew-state: Orca read error JSON fails closed
+ok - fm_backend_target_exists: Orca ok:false read JSON is not live
+ok - fm-teardown.sh backend=orca: scout report gate then helper-backed worktree removal
+ok - fm-teardown.sh backend=orca: scout teardown refuses id/path mismatches
+ok - fm-teardown.sh backend=orca: releases terminal/worktree when path is absent
+ok - fm-teardown.sh backend=orca: preserves metadata on remove ok:false JSON
+ok - fm-teardown.sh backend=orca: scout report gate precedes pathless helper cleanup
+ok - fm-teardown.sh backend=orca: ship teardown fails closed when worktree path is missing
+ok - fm-teardown.sh backend=orca: ship teardown requires a matching Orca id path
+ok - fm-teardown.sh backend=orca: ship teardown fails closed when id resolution fails
+ok - fm-teardown.sh backend=orca: ship teardown refuses id/path mismatches
+ok - fm-teardown.sh backend=orca: refuses missing worktree ids before cleanup
+ok - fm-teardown.sh backend=orca: refuses incomplete worktree-only endpoint metadata before runtime dispatch
+ok - fm-teardown.sh --force: removes Orca secondmate children through Orca
+ok - fm-teardown.sh --force: refuses Orca child id/path mismatches
+ok - fm-teardown.sh --force: refuses partial Orca secondmate children before runtime dispatch
+FM_TEST_END 2026-10-09T19:28:41Z tests/fm-backend-orca.test.sh exit=0 duration_ms=87093 gate_skip=false
+FM_TEST_SUMMARY total=6 failed=0 skipped_gate=0 duration_ms=683381
+FM_TEST_SUMMARY_FAMILY family=orca count=1 duration_ms=87093 failed=0
+FM_TEST_SUMMARY_FAMILY family=pure-contract-unit count=1 duration_ms=3494 failed=0
+FM_TEST_SUMMARY_FAMILY family=watcher-wake-lock count=4 duration_ms=993606 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-codex-orca-continuation.test.sh duration_ms=591291
+FM_TEST_SLOWEST rank=2 script=tests/fm-wake-queue.test.sh duration_ms=291602
+FM_TEST_SLOWEST rank=3 script=tests/fm-turnend-guard.test.sh duration_ms=93308
+FM_TEST_SLOWEST rank=4 script=tests/fm-backend-orca.test.sh duration_ms=87093
+FM_TEST_SLOWEST rank=5 script=tests/fm-watch-checkpoint.test.sh duration_ms=17405
+FM_TEST_SLOWEST rank=6 script=tests/fm-supervision-instructions.test.sh duration_ms=3494
+fm-test-run: wrote timing artifact: /Users/cfischer/.no-mistakes/evidence/01M4GT61FYY7NF02WYRHDC77WK/targeted.json

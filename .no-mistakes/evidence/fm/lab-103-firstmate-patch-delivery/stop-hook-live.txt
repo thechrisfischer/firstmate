@@ -1,0 +1,44 @@
+tested head f0a2bc906ddbe6f215c4319039f45ace0370447a exported to disposable plain checkout <LAB>/code; FM_HOME=<LAB>; supervision need = state/x-watch.check.sh; no watcher armed
+
+### A non-Orca Codex primary, first Stop
+payload: {"hook_event_name":"Stop","stop_hook_active":false}
+exit=2 elapsed_s=0.6
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | ●  TURN WOULD END BLIND - SUPERVISION IS OFF
+  | ●  X-mode relay polling needs supervision, but no live watcher holds this home lock (last beat: never).
+  | ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### B non-Orca Codex primary, repeated Stop
+payload: {"hook_event_name":"Stop","stop_hook_active":true}
+exit=0 elapsed_s=0.12
+  | 
+
+### C Orca primary (ORCA_TERMINAL_HANDLE set), orca CLI absent, first Stop
+payload: {"hook_event_name":"Stop","stop_hook_active":false}
+exit=2 elapsed_s=0.48
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  | ●  TURN WOULD END BLIND - SUPERVISION IS OFF
+  | ●  X-mode relay polling needs supervision, but no live watcher holds this home lock (last beat: never).
+  | ●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+  | ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### D Orca primary, orca CLI absent, repeated Stop
+payload: {"hook_event_name":"Stop","stop_hook_active":true}
+exit=0 elapsed_s=0.21
+  | 
+
+lab state entries after:
+x-watch.check.sh
+### fm-codex-orca-continuation.py context (ORCA_TERMINAL_HANDLE=term_lab_fake, orca absent)
+exit=3
+### fm-codex-orca-continuation.py status (ORCA_TERMINAL_HANDLE=term_lab_fake, orca absent)
+{
+  "ready": false
+}
+exit=0
+### fm-codex-orca-continuation.py ensure (ORCA_TERMINAL_HANDLE=term_lab_fake, orca absent)
+{
+  "applicable": false
+}
+exit=0
